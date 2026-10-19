@@ -13,6 +13,8 @@ final class Recorder {
         let engine = AVAudioEngine()
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
+        // With no input device the format is empty, and installing a tap on it raises an exception.
+        guard format.sampleRate > 0, format.channelCount > 0 else { throw RecorderError.noInputDevice }
         let buffer = self.buffer
         buffer.reset()
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { pcm, _ in
@@ -49,6 +51,10 @@ final class Recorder {
         let db = 20 * log10(max(rms, 1e-7))
         return min(max((db + 50) / 50, 0), 1)
     }
+}
+
+enum RecorderError: Error {
+    case noInputDevice
 }
 
 /// The audio tap runs on a realtime thread, so samples cross to the main actor through a lock.

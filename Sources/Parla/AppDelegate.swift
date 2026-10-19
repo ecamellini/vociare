@@ -55,6 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         statusLine.title =
             !hotkey.isRunning ? "Needs Accessibility permission"
+            : AVCaptureDevice.authorizationStatus(for: .audio) != .authorized ? "Needs Microphone permission"
             : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         pasteLastItem.representedObject = history.first
