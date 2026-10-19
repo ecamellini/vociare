@@ -6,6 +6,8 @@ import Carbon.HIToolbox
 enum Paster {
     // Tells clipboard managers to skip this entry (nspasteboard.org convention).
     private static let transientType = NSPasteboard.PasteboardType("org.nspasteboard.TransientType")
+    // Password managers mark copied secrets with this type (nspasteboard.org convention).
+    private static let concealedType = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
 
     static func paste(_ text: String) {
         let pasteboard = NSPasteboard.general
@@ -22,8 +24,10 @@ enum Paster {
         // The target app reads the clipboard asynchronously after receiving Cmd+V.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             // Leave the clipboard alone if the user copied something in the meantime.
-            guard pasteboard.changeCount == ourChange, !saved.isEmpty else { return }
+            guard pasteboard.changeCount == ourChange else { return }
             pasteboard.clearContents()
+            // Putting a password back would stop its password manager from clearing it on schedule.
+            guard !saved.contains(where: { $0[concealedType] != nil }) else { return }
             pasteboard.writeObjects(saved.map { contents in
                 let item = NSPasteboardItem()
                 contents.forEach { item.setData($1, forType: $0) }

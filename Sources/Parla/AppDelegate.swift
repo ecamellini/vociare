@@ -120,6 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         stopSound?.play()
         overlay.showTranscribing()
         pendingTranscriptions += 1
+        let targetApp = NSWorkspace.shared.frontmostApplication
         Task {
             defer {
                 pendingTranscriptions -= 1
@@ -131,6 +132,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 logger.notice("Transcribed \(text.count) characters")
                 guard !text.isEmpty else { return }
                 history = Array(([text] + history).prefix(Self.historyLimit))
+                // A slow first load can finish after the user moved on; the text stays in Recent instead.
+                guard NSWorkspace.shared.frontmostApplication == targetApp else {
+                    logger.notice("Focus moved during transcription; kept in Recent instead of pasting")
+                    return
+                }
                 Paster.paste(text)
             } catch {
                 logger.error("Transcription failed: \(error, privacy: .public)")
