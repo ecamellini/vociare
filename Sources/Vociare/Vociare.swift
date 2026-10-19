@@ -1,5 +1,6 @@
 import AppKit
 import FluidAudio
+import ServiceManagement
 
 @main
 enum Vociare {
@@ -26,6 +27,11 @@ enum Vociare {
                 }
             }
             RunLoop.main.run()
+        }
+        // Login items outlive the app bundle, so uninstall.sh asks the app to remove its own before deleting it.
+        if arguments.count == 2, arguments[1] == "--unregister-login-item" {
+            try? SMAppService.mainApp.unregister()
+            exit(0)
         }
         if arguments.count == 3, arguments[1] == "--render-icon" {
             do {

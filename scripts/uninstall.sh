@@ -2,15 +2,26 @@
 # Removes everything install.sh and the app created.
 set -euo pipefail
 
+APP=/Applications/Vociare.app
 KEYCHAIN="$HOME/Library/Keychains/vociare-signing.keychain-db"
 
 pkill -x Vociare || true
-rm -rf /Applications/Vociare.app
+[[ -x "$APP/Contents/MacOS/Vociare" ]] && "$APP/Contents/MacOS/Vociare" --unregister-login-item
+rm -rf "$APP"
+
 if [[ -f "$KEYCHAIN" ]]; then
-  # shellcheck disable=SC2046
-  security list-keychains -d user -s $(security list-keychains -d user | tr -d '"' | grep -v vociare-signing)
+  keychains=()
+  while IFS= read -r keychain; do
+    [[ "$keychain" == "$KEYCHAIN" ]] || keychains+=("$keychain")
+  done < <(security list-keychains -d user | sed -e 's/^[[:space:]]*"//' -e 's/"$//')
+  security list-keychains -d user -s "${keychains[@]}"
   security delete-keychain "$KEYCHAIN"
 fi
+security delete-generic-password -s vociare-signing -a "$USER" >/dev/null 2>&1 || true
+
+rm -rf "$HOME/Library/Caches/me.ecamel.vociare" "$HOME/Library/Caches/Vociare" \
+  "$HOME/Library/HTTPStorages/me.ecamel.vociare" "$HOME/Library/HTTPStorages/Vociare"
+# FluidAudio's shared model folder: other apps built on FluidAudio may use this model too.
 rm -rf "$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3-coreml"
 tccutil reset All me.ecamel.vociare >/dev/null 2>&1 || true
 echo "Vociare removed"

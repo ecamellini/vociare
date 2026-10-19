@@ -27,8 +27,11 @@ It builds Vociare, downloads the model (~470 MB, into `~/Library/Application Sup
 
 On the first run the script also sets up code signing, because macOS ties the Microphone and Accessibility permissions to the app's signature and an unsigned rebuild would lose them:
 
-- it creates a self-signed certificate in a dedicated keychain, `~/Library/Keychains/vociare-signing.keychain-db`, protected by a fixed password since it only holds this throwaway certificate;
-- it adds that keychain to your keychain search list, which `codesign` needs to find the certificate.
+- it creates a self-signed certificate with a non-exportable key in a dedicated keychain, `~/Library/Keychains/vociare-signing.keychain-db`;
+- it stores that keychain's random password in your login keychain (item `vociare-signing`), so later installs sign without prompting;
+- it adds the keychain to your keychain search list, which `codesign` needs to find the certificate.
+
+The keychain is locked again right after signing. The trade-off of prompt-free signing: a program running as you could read the stored password and sign itself as Vociare, inheriting its Microphone and Accessibility permissions. A developer certificate that `codesign` may use without asking carries the same risk.
 
 ## Uninstall
 
@@ -36,7 +39,7 @@ On the first run the script also sets up code signing, because macOS ties the Mi
 ./scripts/uninstall.sh
 ```
 
-Removes the app, the signing keychain (and its search list entry), the downloaded model and Vociare's privacy permissions.
+Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, the downloaded model and Vociare's privacy permissions. The model lives in FluidAudio's shared folder, so other apps built on FluidAudio would download it again.
 
 ## Development
 
