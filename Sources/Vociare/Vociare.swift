@@ -2,7 +2,7 @@ import AppKit
 import FluidAudio
 
 @main
-enum Parla {
+enum Vociare {
     @MainActor static func main() {
         let arguments = CommandLine.arguments
         if arguments.count == 3, arguments[1] == "--transcribe" {
@@ -29,7 +29,7 @@ enum Parla {
         }
         if arguments.count == 3, arguments[1] == "--render-icon" {
             do {
-                try ParlaIcon.writeIconSet(to: URL(fileURLWithPath: arguments[2]))
+                try VociareIcon.writeIconSet(to: URL(fileURLWithPath: arguments[2]))
                 exit(0)
             } catch {
                 print("Failed: \(error)")

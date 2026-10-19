@@ -7,7 +7,7 @@ import OSLog
 final class HotkeyMonitor {
     // Device-dependent flag for the right Command key (NX_DEVICERCMDKEYMASK).
     private static let rightCommandMask: UInt64 = 0x10
-    private let logger = Logger(subsystem: "me.ecamel.parla", category: "Hotkey")
+    private let logger = Logger(subsystem: "me.ecamel.vociare", category: "Hotkey")
     private let holdThreshold: TimeInterval
     private let onStart: () -> Void
     private let onStop: () -> Void

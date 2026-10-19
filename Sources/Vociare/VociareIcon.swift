@@ -1,7 +1,7 @@
 import AppKit
 
-/// Parla's mark, a speech bubble holding a waveform. It is drawn in code so the app icon and the menu bar share one shape.
-enum ParlaIcon {
+/// Vociare's mark, a speech bubble holding a waveform. It is drawn in code so the app icon and the menu bar share one shape.
+enum VociareIcon {
     private static let barHeights: [CGFloat] = [0.25, 0.45, 0.62, 0.45, 0.25]
     private static let gradientTop = CGColor(red: 1.0, green: 0.62, blue: 0.26, alpha: 1)
     private static let gradientBottom = CGColor(red: 0.93, green: 0.29, blue: 0.42, alpha: 1)

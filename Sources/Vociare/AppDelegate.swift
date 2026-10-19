@@ -5,7 +5,7 @@ import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
-    private let logger = Logger(subsystem: "me.ecamel.parla", category: "App")
+    private let logger = Logger(subsystem: "me.ecamel.vociare", category: "App")
     private let transcriber = Transcriber(idleTimeout: .seconds(10 * 60))
     private let recorder = Recorder()
     private let overlay = Overlay()
@@ -29,7 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = ParlaIcon.menuBarImage(recording: false)
+        item.button?.image = VociareIcon.menuBarImage(recording: false)
         let menu = NSMenu()
         menu.delegate = self
         menu.addItem(statusLine)
@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         loginItem.target = self
         menu.addItem(loginItem)
-        menu.addItem(NSMenuItem(title: "Quit Parla", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit Vociare", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         item.menu = menu
         statusItem = item
 
@@ -108,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         transcriber.warmUp()
         isRecording = true
-        statusItem?.button?.image = ParlaIcon.menuBarImage(recording: true)
+        statusItem?.button?.image = VociareIcon.menuBarImage(recording: true)
         overlay.show()
         startSound?.play()
         logger.notice("Dictation started")
@@ -117,7 +117,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func stopDictation() {
         guard isRecording else { return }
         isRecording = false
-        statusItem?.button?.image = ParlaIcon.menuBarImage(recording: false)
+        statusItem?.button?.image = VociareIcon.menuBarImage(recording: false)
         stopSound?.play()
         overlay.showTranscribing()
         pendingTranscriptions += 1

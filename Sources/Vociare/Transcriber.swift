@@ -10,7 +10,7 @@ extension AsrManager: @retroactive @unchecked Sendable {}
 @MainActor
 final class Transcriber {
     private static let sampleRate = 16_000
-    private let logger = Logger(subsystem: "me.ecamel.parla", category: "Transcriber")
+    private let logger = Logger(subsystem: "me.ecamel.vociare", category: "Transcriber")
     private let idleTimeout: Duration
     private var loading: Task<AsrManager, Error>?
     private var isReady = false

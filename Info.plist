@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>me.ecamel.parla</string>
+	<string>me.ecamel.vociare</string>
 	<key>CFBundleName</key>
-	<string>Parla</string>
+	<string>Vociare</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
-	<string>Parla</string>
+	<string>Vociare</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -21,6 +21,6 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Parla records your voice while you hold the dictation key and transcribes it on this Mac.</string>
+	<string>Vociare records your voice while you hold the dictation key and transcribes it on this Mac.</string>
 </dict>
 </plist>
