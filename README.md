@@ -2,7 +2,7 @@
 
 *Vociare* (Italian, /voˈtʃaːre/): to chatter, to talk loudly.
 
-Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is typed into the focused app. Nothing leaves your Mac.
+Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is typed into the focused app. Your voice and text never leave your Mac; the only download is the model.
 
 > **AI-assisted code.** Vociare is a vibe-coded app: its code was written by an AI coding agent, directed, reviewed and tested by a human. Read it with that in mind before relying on it.
 
@@ -56,7 +56,7 @@ swift build -c release --build-system native
 ## Credits
 
 - [FluidAudio](https://github.com/FluidInference/FluidAudio) by FluidInference, Apache License 2.0.
-- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, CC BY 4.0. The model is downloaded from Hugging Face at install time and not redistributed here.
+- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The model is downloaded from Hugging Face at install time and not redistributed here.
 
 ## License
 
