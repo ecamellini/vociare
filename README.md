@@ -13,7 +13,7 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 
 - Apple Silicon Mac, macOS 14 or later.
 - Xcode or the Command Line Tools (`xcode-select --install`).
-- No prebuilt release: Parla is built from source, since a downloaded build would need an Apple Developer ID to pass Gatekeeper.
+- No prebuilt release: Parla is built from source.
 
 ## Install
 
