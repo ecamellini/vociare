@@ -14,7 +14,7 @@ if [[ -f "$KEYCHAIN" ]]; then
   while IFS= read -r keychain; do
     [[ "$keychain" == "$KEYCHAIN" ]] || keychains+=("$keychain")
   done < <(security list-keychains -d user | sed -e 's/^[[:space:]]*"//' -e 's/"$//')
-  security list-keychains -d user -s "${keychains[@]}"
+  security list-keychains -d user -s ${keychains[@]+"${keychains[@]}"}
   security delete-keychain "$KEYCHAIN"
 fi
 security delete-generic-password -s vociare-signing -a "$USER" >/dev/null 2>&1 || true

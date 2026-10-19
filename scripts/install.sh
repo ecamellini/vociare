@@ -43,7 +43,7 @@ create_identity() {
   security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$KEYCHAIN" >/dev/null
   # codesign only finds identities in keychains on the search list, even when given --keychain.
   while IFS= read -r keychain; do keychains+=("$keychain"); done < <(user_keychains)
-  security list-keychains -d user -s "${keychains[@]}" "$KEYCHAIN"
+  security list-keychains -d user -s ${keychains[@]+"${keychains[@]}"} "$KEYCHAIN"
 }
 
 # The Swift Build backend fails to start with only the Command Line Tools installed.
