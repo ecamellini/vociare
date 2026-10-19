@@ -21,7 +21,7 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 ./scripts/install.sh
 ```
 
-It builds Parla, installs it as `/Applications/Parla.app` (replacing and relaunching any running copy) and starts it. Then grant **Microphone** and **Accessibility** in System Settings → Privacy & Security. The first dictation downloads the model (~470 MB) into `~/Library/Application Support/FluidAudio/Models`.
+It builds Parla, downloads the model (~470 MB, into `~/Library/Application Support/FluidAudio/Models`; skipped when already there), installs the app as `/Applications/Parla.app` (replacing and relaunching any running copy) and starts it. Then grant **Microphone** and **Accessibility** in System Settings → Privacy & Security.
 
 On the first run the script also sets up code signing, because macOS ties the Microphone and Accessibility permissions to the app's signature and an unsigned rebuild would lose them:
 
@@ -42,15 +42,16 @@ Removes the app, the signing keychain (and its search list entry), the downloade
 swift build -c release --build-system native
 ```
 
-`--build-system native` is needed when only the Command Line Tools are installed. Two flags help without the UI:
+`--build-system native` is needed when only the Command Line Tools are installed. A few flags work without the UI:
 
+- `Parla --download-model` downloads the model if missing and loads it once.
 - `Parla --transcribe <audio file>` runs the model on a file and prints the text with cold and warm timings.
 - `Parla --render-icon <dir>.iconset` renders the app icon, drawn in code in `ParlaIcon.swift`.
 
 ## Credits
 
 - [FluidAudio](https://github.com/FluidInference/FluidAudio) by FluidInference, Apache License 2.0.
-- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, CC BY 4.0. The model is downloaded at runtime and not redistributed here.
+- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, CC BY 4.0. The model is downloaded from Hugging Face at install time and not redistributed here.
 
 ## License
 

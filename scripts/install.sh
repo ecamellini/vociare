@@ -47,6 +47,8 @@ cp Info.plist "$APP/Contents/Info.plist"
 security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
 codesign --force --keychain "$KEYCHAIN" --sign "$IDENTITY" "$APP"
 
+.build/release/Parla --download-model || echo "Model download failed; Parla will retry on the first dictation."
+
 pkill -x Parla || true
 # Launching while the old instance is still quitting fails with LaunchServices error -600.
 while pgrep -x Parla >/dev/null; do sleep 0.2; done

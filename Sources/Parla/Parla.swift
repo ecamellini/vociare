@@ -12,6 +12,21 @@ enum Parla {
             }
             RunLoop.main.run()
         }
+        if arguments.count == 2, arguments[1] == "--download-model" {
+            Task {
+                do {
+                    print("Downloading the Parakeet model (~470 MB) if missing, then loading it once...")
+                    // Loading once also compiles the model for the Neural Engine, so the first dictation is fast.
+                    _ = try await AsrModels.downloadAndLoad(version: .v3)
+                    print("Model ready")
+                    exit(0)
+                } catch {
+                    print("Failed: \(error)")
+                    exit(1)
+                }
+            }
+            RunLoop.main.run()
+        }
         if arguments.count == 3, arguments[1] == "--render-icon" {
             do {
                 try ParlaIcon.writeIconSet(to: URL(fileURLWithPath: arguments[2]))
