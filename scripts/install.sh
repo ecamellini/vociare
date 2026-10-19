@@ -62,7 +62,8 @@ security unlock-keychain -p "$(security find-generic-password -s "$PASSWORD_SERV
 codesign --force --keychain "$KEYCHAIN" --sign "$IDENTITY" "$APP"
 security lock-keychain "$KEYCHAIN"
 
-.build/release/Vociare --download-model || echo "Model download failed; Vociare will retry on the first dictation."
+# Run from inside the bundle: Core ML caches the compiled model per bundle ID, and the app reads only its own.
+"$APP/Contents/MacOS/Vociare" --download-model || echo "Model download failed; Vociare will retry on the first dictation."
 
 pkill -x Vociare || true
 # Launching while the old instance is still quitting fails with LaunchServices error -600.
