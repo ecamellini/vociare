@@ -1,0 +1,45 @@
+import AppKit
+import FluidAudio
+
+@main
+enum Parla {
+    @MainActor static func main() {
+        let arguments = CommandLine.arguments
+        if arguments.count == 3, arguments[1] == "--transcribe" {
+            Task {
+                await transcribeFile(arguments[2])
+                exit(0)
+            }
+            RunLoop.main.run()
+        }
+        if arguments.count == 3, arguments[1] == "--render-icon" {
+            do {
+                try ParlaIcon.writeIconSet(to: URL(fileURLWithPath: arguments[2]))
+                exit(0)
+            } catch {
+                print("Failed: \(error)")
+                exit(1)
+            }
+        }
+
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.setActivationPolicy(.accessory)
+        app.run()
+    }
+
+    /// Runs the dictation pipeline on an audio file, to check the model without a microphone.
+    @MainActor private static func transcribeFile(_ path: String) async {
+        let transcriber = Transcriber(idleTimeout: .seconds(60))
+        do {
+            let samples = try AudioConverter().resampleAudioFile(URL(fileURLWithPath: path))
+            let clock = ContinuousClock()
+            let cold = try await clock.measure { print(try await transcriber.transcribe(samples)) }
+            let warm = try await clock.measure { _ = try await transcriber.transcribe(samples) }
+            print("cold: \(cold), warm: \(warm)")
+        } catch {
+            print("Failed: \(error)")
+        }
+    }
+}
