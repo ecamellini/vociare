@@ -22,6 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
     private let recentItem = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
     private var isRecording = false
+    private var pendingTranscriptions = 0
     // In memory only, so dictated text never lands on disk.
     private var history: [String] = []
     private static let historyLimit = 10
@@ -54,8 +55,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         statusLine.title =
             !hotkey.isRunning ? "Needs Accessibility permission"
-            : transcriber.isLoaded ? "Hold right ⌘ to dictate · model in memory"
-            : "Hold right ⌘ to dictate · model unloaded"
+            : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         pasteLastItem.representedObject = history.first
         pasteLastItem.isEnabled = !history.isEmpty
@@ -90,14 +90,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private var modelStatus: String {
+        switch transcriber.modelState {
+        case .unloaded: "model unloaded"
+        case .loading: "model loading…"
+        case .ready: "model in memory"
+        }
+    }
+
     private func startDictation() {
-        transcriber.warmUp()
         do {
             try recorder.start { [weak self] level in self?.overlay.push(level: level) }
         } catch {
             logger.error("Microphone failed to start: \(error, privacy: .public)")
             return
         }
+        transcriber.warmUp()
         isRecording = true
         statusItem?.button?.image = ParlaIcon.menuBarImage(recording: true)
         overlay.show()
@@ -111,8 +119,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem?.button?.image = ParlaIcon.menuBarImage(recording: false)
         stopSound?.play()
         overlay.showTranscribing()
+        pendingTranscriptions += 1
         Task {
-            defer { overlay.hide() }
+            defer {
+                pendingTranscriptions -= 1
+                // A newer dictation may still be recording or transcribing, and owns the overlay.
+                if pendingTranscriptions == 0 && !isRecording { overlay.hide() }
+            }
             do {
                 let text = try await transcriber.transcribe(try recorder.stop())
                 logger.notice("Transcribed \(text.count) characters")
