@@ -15,7 +15,8 @@ enum Paster {
             Dictionary(uniqueKeysWithValues: item.types.compactMap { type in item.data(forType: type).map { (type, $0) } })
         }
 
-        pasteboard.clearContents()
+        // Keeps the dictated text off Universal Clipboard, which would offer it to the user's other devices.
+        pasteboard.prepareForNewContents(with: .currentHostOnly)
         pasteboard.setString(text, forType: .string)
         pasteboard.setData(Data(), forType: transientType)
         let ourChange = pasteboard.changeCount
