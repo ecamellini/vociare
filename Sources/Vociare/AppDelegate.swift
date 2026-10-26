@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private lazy var loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+    private lazy var latinItem = NSMenuItem(title: "Latin Alphabet Only", action: #selector(toggleLatinScriptOnly), keyEquivalent: "")
+    static let latinScriptOnlyKey = "latinScriptOnly"
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
     private let recentItem = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
     private var isRecording = false
@@ -40,6 +42,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         recentItem.submenu = NSMenu()
         menu.addItem(recentItem)
         menu.addItem(.separator())
+        latinItem.target = self
+        latinItem.toolTip = "Drop Cyrillic and Greek letters, which the model sometimes writes for Latin-script languages"
+        menu.addItem(latinItem)
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(NSMenuItem(title: "Quit Vociare", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -58,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : AVCaptureDevice.authorizationStatus(for: .audio) != .authorized ? "Needs Microphone permission"
             : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        latinItem.state = UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey) ? .on : .off
         pasteLastItem.representedObject = history.first
         pasteLastItem.isEnabled = !history.isEmpty
         recentItem.isEnabled = !history.isEmpty
@@ -89,6 +95,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             logger.error("Launch at login change failed: \(error)")
         }
+    }
+
+    @objc private func toggleLatinScriptOnly() {
+        let defaults = UserDefaults.standard
+        defaults.set(!defaults.bool(forKey: Self.latinScriptOnlyKey), forKey: Self.latinScriptOnlyKey)
     }
 
     private var modelStatus: String {
@@ -129,7 +140,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 if pendingTranscriptions == 0 && !isRecording { overlay.hide() }
             }
             do {
-                let text = try await transcriber.transcribe(try recorder.stop())
+                let text = try await transcriber.transcribe(
+                    try recorder.stop(), latinScriptOnly: UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey))
                 logger.notice("Transcribed \(text.count) characters")
                 guard !text.isEmpty else { return }
                 history = Array(([text] + history).prefix(Self.historyLimit))

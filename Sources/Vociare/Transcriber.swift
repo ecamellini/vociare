@@ -32,7 +32,8 @@ final class Transcriber {
         _ = loadingTask()
     }
 
-    func transcribe(_ samples: [Float]) async throws -> String {
+    /// `latinScriptOnly` drops Cyrillic and Greek tokens, which Parakeet sometimes emits for Latin-script speech.
+    func transcribe(_ samples: [Float], latinScriptOnly: Bool = false) async throws -> String {
         unloadTask?.cancel()
         let previous = lastTranscription
         let transcription = Task {
@@ -40,7 +41,11 @@ final class Transcriber {
             let manager = try await loadingTask().value
             // Parakeet rejects clips shorter than one second.
             let padded = samples + Array(repeating: 0, count: max(0, Self.sampleRate - samples.count))
-            let result = try await manager.transcribe(padded, source: .microphone)
+            var state = TdtDecoderState.make(decoderLayers: await manager.decoderLayerCount)
+            // The hint only filters by script, so any Latin-script language works; French would also
+            // block some English tokens.
+            let result = try await manager.transcribe(
+                padded, decoderState: &state, language: latinScriptOnly ? .english : nil)
             return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         lastTranscription = Task { _ = await transcription.result }
@@ -54,7 +59,7 @@ final class Transcriber {
             let start = ContinuousClock.now
             let models = try await AsrModels.downloadAndLoad(version: .v3)
             let manager = AsrManager(config: .default)
-            try await manager.initialize(models: models)
+            try await manager.loadModels(models)
             self.logger.info("Model loaded in \(ContinuousClock.now - start, privacy: .public)")
             self.isReady = true
             return manager
