@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private lazy var loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+    private lazy var noiseItem = NSMenuItem(title: "Reduce Background Noise", action: #selector(toggleVoiceProcessing), keyEquivalent: "")
+    private static let voiceProcessingKey = "voiceProcessing"
     private lazy var latinItem = NSMenuItem(title: "Latin Alphabet Only", action: #selector(toggleLatinScriptOnly), keyEquivalent: "")
     static let latinScriptOnlyKey = "latinScriptOnly"
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
@@ -42,6 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         recentItem.submenu = NSMenu()
         menu.addItem(recentItem)
         menu.addItem(.separator())
+        noiseItem.target = self
+        menu.addItem(noiseItem)
         latinItem.target = self
         latinItem.toolTip = "Drop Cyrillic and Greek letters, which the model sometimes writes for Latin-script languages"
         menu.addItem(latinItem)
@@ -54,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let prompt = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
         AXIsProcessTrustedWithOptions([prompt: true] as CFDictionary)
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
+        recorder.voiceProcessing = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey)
         hotkey.start()
     }
 
@@ -63,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : AVCaptureDevice.authorizationStatus(for: .audio) != .authorized ? "Needs Microphone permission"
             : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+        noiseItem.state = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey) ? .on : .off
         latinItem.state = UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey) ? .on : .off
         pasteLastItem.representedObject = history.first
         pasteLastItem.isEnabled = !history.isEmpty
@@ -97,6 +103,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    @objc private func toggleVoiceProcessing() {
+        recorder.voiceProcessing.toggle()
+        UserDefaults.standard.set(recorder.voiceProcessing, forKey: Self.voiceProcessingKey)
+    }
+
     @objc private func toggleLatinScriptOnly() {
         let defaults = UserDefaults.standard
         defaults.set(!defaults.bool(forKey: Self.latinScriptOnlyKey), forKey: Self.latinScriptOnlyKey)
@@ -112,7 +123,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func startDictation() {
         do {
-            try recorder.start { [weak self] level in self?.overlay.push(level: level) }
+            let voiceProcessing = recorder.voiceProcessing
+            try recorder.start(
+                // Voice processing can take a second to start: the chime waits so the first words aren't lost.
+                onReady: { [weak self] in if voiceProcessing, self?.isRecording == true { self?.startSound?.play() } },
+                onLevel: { [weak self] level in self?.overlay.push(level: level) }
+            )
+            if !voiceProcessing { startSound?.play() }
         } catch {
             logger.error("Microphone failed to start: \(error, privacy: .public)")
             return
@@ -121,7 +138,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         isRecording = true
         statusItem?.button?.image = VociareIcon.menuBarImage(recording: true)
         overlay.show()
-        startSound?.play()
         logger.notice("Dictation started")
     }
 
