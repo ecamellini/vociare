@@ -2,9 +2,6 @@ import FluidAudio
 import Foundation
 import OSLog
 
-// Transcriber hands the manager to one transcription at a time, never concurrently.
-extension AsrManager: @retroactive @unchecked Sendable {}
-
 /// Loads Parakeet on first use and unloads it after `idleTimeout` without transcriptions,
 /// so the model only holds memory while dictation is actually being used.
 @MainActor
@@ -15,7 +12,7 @@ final class Transcriber {
     private var loading: Task<AsrManager, Error>?
     private var isReady = false
     private var unloadTask: Task<Void, Never>?
-    // AsrManager keeps decoder state across awaits, so overlapping transcriptions would corrupt each other.
+    // One at a time, so dictations finish in the order they were spoken.
     private var lastTranscription: Task<Void, Never>?
 
     init(idleTimeout: Duration) {
@@ -79,7 +76,7 @@ final class Transcriber {
         unloadTask = Task {
             try? await Task.sleep(for: idleTimeout)
             guard !Task.isCancelled else { return }
-            // Dropping the manager releases the Core ML models; AsrManager.cleanup() keeps a reference to them.
+            // Dropping the manager releases the Core ML models.
             loading = nil
             isReady = false
             logger.info("Model unloaded after idle timeout")
