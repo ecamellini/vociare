@@ -16,7 +16,7 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 ## Requirements
 
 - Apple Silicon Mac, macOS 14 or later.
-- Xcode 16 or later, or its Command Line Tools (`xcode-select --install`).
+- Xcode 26 or later, or its Command Line Tools (`xcode-select --install`): the build needs Swift 6.2 for FluidAudio's package traits.
 - No prebuilt release: Vociare is built from source.
 
 ## Install

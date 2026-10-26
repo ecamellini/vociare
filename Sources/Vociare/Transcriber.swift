@@ -39,7 +39,7 @@ final class Transcriber {
         let transcription = Task {
             await previous?.value
             let manager = try await loadingTask().value
-            // Parakeet rejects clips shorter than one second.
+            // FluidAudio rejects very short clips; a second of audio is always enough.
             let padded = samples + Array(repeating: 0, count: max(0, Self.sampleRate - samples.count))
             var state = TdtDecoderState.make(decoderLayers: await manager.decoderLayerCount)
             // The hint only filters by script, so any Latin-script language works; French would also
