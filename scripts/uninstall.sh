@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Removes everything install.sh and the app created.
+# Removes everything install.sh and the app created, except the shared speech model, which it offers to delete.
 set -euo pipefail
 
 APP=/Applications/Vociare.app
@@ -29,7 +29,7 @@ MODEL="$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3-
 if [[ -d "$MODEL" ]]; then
   answer=n
   if [[ -t 0 ]]; then
-    read -r -p "Also delete the speech model, which other FluidAudio apps may use? [y/N] " answer || true
+    read -r -p "Also delete the speech model, which other FluidAudio apps may use? [y/N] " answer || echo
   fi
   if [[ "$answer" == [yY]* ]]; then
     rm -rf "$MODEL"
