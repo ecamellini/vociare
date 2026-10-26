@@ -10,13 +10,14 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 - The model loads when you start dictating and unloads after 10 idle minutes. Reloading takes about a second and overlaps with your speech. After a macOS update the first dictation can take half a minute, while Core ML prepares the model for the Neural Engine again.
 - A quick tap, a Command+key shortcut or a Command+click works as usual: dictation starts only when right Command is held on its own for 250 ms.
 - **Reduce Background Noise** in the menu turns on macOS voice processing: echo cancellation, noise suppression, and the Mic Mode menu in Control Center (pick Voice Isolation there while dictating; macOS remembers it). The microphone then takes about a second to start, so wait for the chime before speaking.
+- **Latin Alphabet Only** in the menu stops the model from writing in Cyrillic or Greek, which it occasionally does with Latin-script languages such as Italian. Leave it off if you dictate in Russian, Ukrainian or Bulgarian.
 - Text is pasted through the clipboard, and your previous clipboard comes back half a second later, unless you copied something in the meantime. A password copied from a password manager is cleared rather than restored.
 - If you switched apps while Vociare was transcribing, or no text field had focus, the text isn't lost: click into the field and pick **Paste Last Dictation** or **Recent** from the menu bar icon. The last 10 dictations are kept in memory only and are gone when Vociare quits.
 
 ## Requirements
 
 - Apple Silicon Mac, macOS 14 or later.
-- Xcode 16 or later, or its Command Line Tools (`xcode-select --install`).
+- Xcode 26 or later, or its Command Line Tools (`xcode-select --install`): the build needs Swift 6.2 for FluidAudio's package traits.
 - No prebuilt release: Vociare is built from source.
 
 ## Install
@@ -47,6 +48,8 @@ git pull && ./scripts/install.sh
 
 This rebuilds and reinstalls with the same signing identity, so the permissions you granted are kept.
 
+Versions from October 2026 on download the model again (~470 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it.
+
 ## Troubleshooting
 
 - **Holding right Command does nothing**: open the menu bar icon; its first line names a missing permission.
@@ -62,7 +65,7 @@ This rebuilds and reinstalls with the same signing identity, so the permissions 
 ./scripts/uninstall.sh
 ```
 
-Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings, the downloaded model and Vociare's privacy permissions. The model lives in FluidAudio's shared folder, so other apps built on FluidAudio would download it again.
+Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings and Vociare's privacy permissions. It then asks whether to delete the downloaded model too: the model lives in FluidAudio's shared folder, where other apps built on FluidAudio may use it. Without a terminal to ask in, the model is kept.
 
 ## Development
 

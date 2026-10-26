@@ -2,9 +2,6 @@ import FluidAudio
 import Foundation
 import OSLog
 
-// Transcriber hands the manager to one transcription at a time, never concurrently.
-extension AsrManager: @retroactive @unchecked Sendable {}
-
 /// Loads Parakeet on first use and unloads it after `idleTimeout` without transcriptions,
 /// so the model only holds memory while dictation is actually being used.
 @MainActor
@@ -15,7 +12,7 @@ final class Transcriber {
     private var loading: Task<AsrManager, Error>?
     private var isReady = false
     private var unloadTask: Task<Void, Never>?
-    // AsrManager keeps decoder state across awaits, so overlapping transcriptions would corrupt each other.
+    // One at a time, so dictations finish in the order they were spoken.
     private var lastTranscription: Task<Void, Never>?
 
     init(idleTimeout: Duration) {
@@ -32,15 +29,20 @@ final class Transcriber {
         _ = loadingTask()
     }
 
-    func transcribe(_ samples: [Float]) async throws -> String {
+    /// `latinScriptOnly` drops Cyrillic and Greek tokens, which Parakeet sometimes emits for Latin-script speech.
+    func transcribe(_ samples: [Float], latinScriptOnly: Bool = false) async throws -> String {
         unloadTask?.cancel()
         let previous = lastTranscription
         let transcription = Task {
             await previous?.value
             let manager = try await loadingTask().value
-            // Parakeet rejects clips shorter than one second.
+            // FluidAudio rejects very short clips; a second of audio is always enough.
             let padded = samples + Array(repeating: 0, count: max(0, Self.sampleRate - samples.count))
-            let result = try await manager.transcribe(padded, source: .microphone)
+            var state = TdtDecoderState.make(decoderLayers: await manager.decoderLayerCount)
+            // The hint only filters by script, so any Latin-script language works; French would also
+            // block some English tokens.
+            let result = try await manager.transcribe(
+                padded, decoderState: &state, language: latinScriptOnly ? .english : nil)
             return result.text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
         lastTranscription = Task { _ = await transcription.result }
@@ -54,7 +56,7 @@ final class Transcriber {
             let start = ContinuousClock.now
             let models = try await AsrModels.downloadAndLoad(version: .v3)
             let manager = AsrManager(config: .default)
-            try await manager.initialize(models: models)
+            try await manager.loadModels(models)
             self.logger.info("Model loaded in \(ContinuousClock.now - start, privacy: .public)")
             self.isReady = true
             return manager
@@ -74,7 +76,7 @@ final class Transcriber {
         unloadTask = Task {
             try? await Task.sleep(for: idleTimeout)
             guard !Task.isCancelled else { return }
-            // Dropping the manager releases the Core ML models; AsrManager.cleanup() keeps a reference to them.
+            // Dropping the manager releases the Core ML models.
             loading = nil
             isReady = false
             logger.info("Model unloaded after idle timeout")

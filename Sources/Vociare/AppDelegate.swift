@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
     private lazy var noiseItem = NSMenuItem(title: "Reduce Background Noise", action: #selector(toggleVoiceProcessing), keyEquivalent: "")
     private static let voiceProcessingKey = "voiceProcessing"
+    private lazy var latinItem = NSMenuItem(title: "Latin Alphabet Only", action: #selector(toggleLatinScriptOnly), keyEquivalent: "")
+    static let latinScriptOnlyKey = "latinScriptOnly"
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
     private let recentItem = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
     private var isRecording = false
@@ -44,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         noiseItem.target = self
         menu.addItem(noiseItem)
+        latinItem.target = self
+        latinItem.toolTip = "Drop Cyrillic and Greek letters, which the model sometimes writes for Latin-script languages"
+        menu.addItem(latinItem)
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(NSMenuItem(title: "Quit Vociare", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -63,6 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         noiseItem.state = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey) ? .on : .off
+        latinItem.state = UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey) ? .on : .off
         pasteLastItem.representedObject = history.first
         pasteLastItem.isEnabled = !history.isEmpty
         recentItem.isEnabled = !history.isEmpty
@@ -99,6 +105,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func toggleVoiceProcessing() {
         let defaults = UserDefaults.standard
         defaults.set(!defaults.bool(forKey: Self.voiceProcessingKey), forKey: Self.voiceProcessingKey)
+    }
+
+    @objc private func toggleLatinScriptOnly() {
+        let defaults = UserDefaults.standard
+        defaults.set(!defaults.bool(forKey: Self.latinScriptOnlyKey), forKey: Self.latinScriptOnlyKey)
     }
 
     private var modelStatus: String {
@@ -145,7 +156,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 if pendingTranscriptions == 0 && !isRecording { overlay.hide() }
             }
             do {
-                let text = try await transcriber.transcribe(try recorder.stop())
+                let text = try await transcriber.transcribe(
+                    try recorder.stop(), latinScriptOnly: UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey))
                 logger.notice("Transcribed \(text.count) characters")
                 guard !text.isEmpty else { return }
                 history = Array(([text] + history).prefix(Self.historyLimit))
