@@ -23,5 +23,8 @@ rm -rf "$HOME/Library/Caches/me.ecamel.vociare" "$HOME/Library/Caches/Vociare" \
   "$HOME/Library/HTTPStorages/me.ecamel.vociare" "$HOME/Library/HTTPStorages/Vociare"
 # FluidAudio's shared model folder: other apps built on FluidAudio may use this model too.
 rm -rf "$HOME/Library/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v3-coreml"
+# Menu settings; the bare binary (`swift build` output) reads them under its executable name.
+defaults delete me.ecamel.vociare >/dev/null 2>&1 || true
+defaults delete Vociare >/dev/null 2>&1 || true
 tccutil reset All me.ecamel.vociare >/dev/null 2>&1 || true
 echo "Vociare removed"

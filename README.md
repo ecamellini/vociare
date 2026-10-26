@@ -62,7 +62,7 @@ This rebuilds and reinstalls with the same signing identity, so the permissions 
 ./scripts/uninstall.sh
 ```
 
-Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, the downloaded model and Vociare's privacy permissions. The model lives in FluidAudio's shared folder, so other apps built on FluidAudio would download it again.
+Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings, the downloaded model and Vociare's privacy permissions. The model lives in FluidAudio's shared folder, so other apps built on FluidAudio would download it again.
 
 ## Development
 
