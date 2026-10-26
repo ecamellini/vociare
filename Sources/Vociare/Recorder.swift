@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreAudio
 import FluidAudio
 
 /// Captures the default microphone into memory and reports its level for the overlay.
@@ -8,18 +9,26 @@ final class Recorder {
     private var format: AVAudioFormat?
     private var configurationObserver: NSObjectProtocol?
     private let buffer = SampleBuffer()
+    // Turning voice processing on takes over a second, so its engine is set up in the background
+    // and kept between recordings.
+    private var voiceEngine: VoiceEngine?
+    private var preparingVoiceEngine = false
+
+    var voiceProcessing = false {
+        didSet { voiceProcessing ? prepareVoiceEngine() : (voiceEngine = nil) }
+    }
 
     /// `onReady` fires with the first captured audio.
-    func start(
-        voiceProcessing: Bool, onReady: @escaping @MainActor () -> Void, onLevel: @escaping @MainActor (Float) -> Void
-    ) throws {
-        // A fresh engine per recording picks up input device changes (e.g. headphones plugged in).
-        let engine = AVAudioEngine()
+    func start(onReady: @escaping @MainActor () -> Void, onLevel: @escaping @MainActor (Float) -> Void) throws {
+        let engine: AVAudioEngine
         if voiceProcessing {
-            try engine.inputNode.setVoiceProcessingEnabled(true)
-            // By default voice processing turns other audio down while recording.
-            engine.inputNode.voiceProcessingOtherAudioDuckingConfiguration = .init(
-                enableAdvancedDucking: false, duckingLevel: .min)
+            let device = Self.defaultInputDevice()
+            // Not ready yet, or the input device changed since: set it up now.
+            if voiceEngine?.device != device { voiceEngine = try VoiceEngine(device: device) }
+            engine = voiceEngine!.engine
+        } else {
+            // A fresh engine per recording picks up input device changes (e.g. headphones plugged in).
+            engine = AVAudioEngine()
         }
         buffer.reset()
         let tap = Tap(buffer: buffer, onReady: onReady, onLevel: onLevel)
@@ -47,6 +56,7 @@ final class Recorder {
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()
         engine = nil
+        if voiceProcessing { prepareVoiceEngine() }
         let samples = buffer.drain()
         guard let format, !samples.isEmpty,
             let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1),
@@ -57,12 +67,48 @@ final class Recorder {
         return try AudioConverter().resampleBuffer(pcm)
     }
 
+    private func prepareVoiceEngine() {
+        let device = Self.defaultInputDevice()
+        guard !preparingVoiceEngine, voiceEngine?.device != device else { return }
+        preparingVoiceEngine = true
+        Task {
+            let prepared = await Task.detached { try? VoiceEngine(device: device) }.value
+            preparingVoiceEngine = false
+            if voiceProcessing, voiceEngine?.device != device { voiceEngine = prepared }
+        }
+    }
+
+    nonisolated private static func defaultInputDevice() -> AudioDeviceID {
+        var device = AudioDeviceID(kAudioObjectUnknown)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice, mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device)
+        return device
+    }
+
     /// Maps RMS from -50…0 dBFS to 0…1, the range where speech actually moves the bars.
     nonisolated static func normalizedLevel(_ samples: [Float]) -> Float {
         guard !samples.isEmpty else { return 0 }
         let rms = sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
         let db = 20 * log10(max(rms, 1e-7))
         return min(max((db + 50) / 50, 0), 1)
+    }
+}
+
+/// An engine with voice processing on, bound to the input device that was the default when it was set up.
+/// Built off the main thread, then used only on it.
+private struct VoiceEngine: @unchecked Sendable {
+    let engine = AVAudioEngine()
+    let device: AudioDeviceID
+
+    init(device: AudioDeviceID) throws {
+        self.device = device
+        try engine.inputNode.setVoiceProcessingEnabled(true)
+        // By default voice processing turns other audio down while recording.
+        engine.inputNode.voiceProcessingOtherAudioDuckingConfiguration = .init(
+            enableAdvancedDucking: false, duckingLevel: .min)
     }
 }
 

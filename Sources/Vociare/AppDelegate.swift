@@ -58,6 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let prompt = kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String
         AXIsProcessTrustedWithOptions([prompt: true] as CFDictionary)
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
+        recorder.voiceProcessing = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey)
         hotkey.start()
     }
 
@@ -103,8 +104,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleVoiceProcessing() {
-        let defaults = UserDefaults.standard
-        defaults.set(!defaults.bool(forKey: Self.voiceProcessingKey), forKey: Self.voiceProcessingKey)
+        recorder.voiceProcessing.toggle()
+        UserDefaults.standard.set(recorder.voiceProcessing, forKey: Self.voiceProcessingKey)
     }
 
     @objc private func toggleLatinScriptOnly() {
@@ -122,10 +123,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func startDictation() {
         do {
-            let voiceProcessing = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey)
+            let voiceProcessing = recorder.voiceProcessing
             try recorder.start(
-                voiceProcessing: voiceProcessing,
-                // Voice processing takes about a second to start: the chime waits so the first words aren't lost.
+                // Voice processing can take a second to start: the chime waits so the first words aren't lost.
                 onReady: { [weak self] in if voiceProcessing, self?.isRecording == true { self?.startSound?.play() } },
                 onLevel: { [weak self] level in self?.overlay.push(level: level) }
             )
