@@ -26,7 +26,7 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 ./scripts/install.sh
 ```
 
-It builds Vociare, downloads the model (~470 MB, into `~/Library/Application Support/FluidAudio/Models`; skipped when already there), installs the app as `/Applications/Vociare.app` (replacing and relaunching any running copy) and starts it.
+It builds Vociare, downloads the model (~600 MB, into `~/Library/Application Support/FluidAudio/Models`; skipped when already there), installs the app as `/Applications/Vociare.app` (replacing and relaunching any running copy) and starts it.
 
 On first launch Vociare asks for two permissions: **Microphone**, to record while you hold the key, and **Accessibility**, to detect the key and paste with Cmd+V. Accept the microphone prompt, then turn Vociare on in System Settings → Privacy & Security → Accessibility; no relaunch needed. The first line of the menu bar menu names any missing permission, and reads "Hold right ⌘ to dictate" once everything is set.
 
@@ -48,7 +48,7 @@ git pull && ./scripts/install.sh
 
 This rebuilds and reinstalls with the same signing identity, so the permissions you granted are kept.
 
-Versions from October 2026 on download the model again (~470 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it.
+Versions from October 2026 on download the model again (~470 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it. From late October 2026 Vociare uses a more accurate encoder, `Encoder_v2.mlmodelc` (~570 MB, downloaded once into the same folder); the old `Encoder.mlmodelc` there can go too, unless another app uses it.
 
 ## Troubleshooting
 
