@@ -16,9 +16,8 @@ enum Vociare {
         if arguments.count == 2, arguments[1] == "--download-model" {
             Task {
                 do {
-                    print("Downloading the Parakeet model (~470 MB) if missing, then loading it once...")
-                    // Loading once also compiles the model for the Neural Engine, so the first dictation is fast.
-                    _ = try await AsrModels.downloadAndLoad(version: .v3)
+                    print("Downloading the Parakeet model (~600 MB) if missing, then loading it once...")
+                    try await Transcriber.download()
                     print("Model ready")
                     exit(0)
                 } catch {

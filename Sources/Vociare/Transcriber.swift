@@ -7,6 +7,9 @@ import OSLog
 @MainActor
 final class Transcriber {
     private static let sampleRate = 16_000
+    // The default 6-bit encoder corrupts words in some contexts (FluidAudio #760): on a real Italian meeting it
+    // wrote "Querfetto" and "tuo balletto" where this one got "Quel perfetto" and "tovagliato".
+    private static let encoderPrecision = ParakeetEncoderPrecision.int8V2
     private let logger = Logger(subsystem: "me.ecamel.vociare", category: "Transcriber")
     private let idleTimeout: Duration
     private var loading: Task<AsrManager, Error>?
@@ -17,6 +20,11 @@ final class Transcriber {
 
     init(idleTimeout: Duration) {
         self.idleTimeout = idleTimeout
+    }
+
+    /// Downloads the model if missing and loads it once, which also compiles it for the Neural Engine.
+    static func download() async throws {
+        _ = try await AsrModels.downloadAndLoad(version: .v3, encoderPrecision: encoderPrecision)
     }
 
     enum ModelState { case unloaded, loading, ready }
@@ -54,7 +62,7 @@ final class Transcriber {
         if let loading { return loading }
         let task = Task {
             let start = ContinuousClock.now
-            let models = try await AsrModels.downloadAndLoad(version: .v3)
+            let models = try await AsrModels.downloadAndLoad(version: .v3, encoderPrecision: Self.encoderPrecision)
             let manager = AsrManager(config: .default)
             try await manager.loadModels(models)
             self.logger.info("Model loaded in \(ContinuousClock.now - start, privacy: .public)")
