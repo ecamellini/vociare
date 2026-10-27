@@ -14,7 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var hotkey = HotkeyMonitor(
         holdThreshold: 0.25,
         onStart: { [weak self] in self?.startDictation() },
-        onStop: { [weak self] in self?.stopDictation() }
+        onStop: { [weak self] in self?.stopDictation() },
+        onCancel: { [weak self] in self?.cancelDictation() }
     )
     private var statusItem: NSStatusItem?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -158,6 +159,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem?.button?.image = VociareIcon.menuBarImage(recording: true)
         overlay.show()
         logger.notice("Dictation started")
+    }
+
+    /// Esc while holding the key: the audio is dropped, nothing transcribed or pasted.
+    private func cancelDictation() {
+        guard isRecording else { return }
+        isRecording = false
+        statusItem?.button?.image = VociareIcon.menuBarImage(recording: false)
+        _ = try? recorder.stop()
+        // An earlier dictation may still be transcribing, and gets the overlay back.
+        if pendingTranscriptions == 0 { overlay.hide() } else { overlay.showTranscribing() }
+        logger.notice("Dictation cancelled")
     }
 
     private func stopDictation() {
