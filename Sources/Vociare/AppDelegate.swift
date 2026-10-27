@@ -72,6 +72,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return false
     }
 
+    /// A status item's menu never takes focus, a reopened one did: closing it gives focus back to the app
+    /// underneath, where Paste Last Dictation, Recent and the next dictation paste.
+    func menuDidClose(_ menu: NSMenu) {
+        if NSApp.isActive { NSApp.hide(nil) }
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         statusLine.title =
             !hotkey.isRunning ? "Needs Accessibility permission"
@@ -92,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    /// Pastes into whichever field has focus: a menu bar menu doesn't take focus from the app underneath.
+    /// Pastes into whichever field has focus: the app underneath the menu (`menuDidClose`).
     @objc private func pasteFromHistory(_ sender: NSMenuItem) {
         guard let text = sender.representedObject as? String else { return }
         // Cmd+V posted while the menu is still closing can reach the menu instead of the app.
