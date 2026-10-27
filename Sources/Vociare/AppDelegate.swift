@@ -166,7 +166,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard isRecording else { return }
         isRecording = false
         statusItem?.button?.image = VociareIcon.menuBarImage(recording: false)
-        _ = try? recorder.stop()
+        recorder.cancel()
+        transcriber.coolDown()
         // An earlier dictation may still be transcribing, and gets the overlay back.
         if pendingTranscriptions == 0 { overlay.hide() } else { overlay.showTranscribing() }
         logger.notice("Dictation cancelled")

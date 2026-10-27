@@ -51,13 +51,7 @@ final class Recorder {
 
     /// Stops capturing and returns the recording as 16 kHz mono, the format Parakeet expects.
     func stop() throws -> [Float] {
-        if let configurationObserver { NotificationCenter.default.removeObserver(configurationObserver) }
-        configurationObserver = nil
-        engine?.inputNode.removeTap(onBus: 0)
-        engine?.stop()
-        engine = nil
-        if voiceProcessing { prepareVoiceEngine() }
-        let samples = buffer.drain()
+        let samples = stopCapture()
         guard let format, !samples.isEmpty,
             let mono = AVAudioFormat(standardFormatWithSampleRate: format.sampleRate, channels: 1),
             let pcm = AVAudioPCMBuffer(pcmFormat: mono, frameCapacity: AVAudioFrameCount(samples.count))
@@ -65,6 +59,21 @@ final class Recorder {
         pcm.frameLength = pcm.frameCapacity
         samples.withUnsafeBufferPointer { pcm.floatChannelData![0].update(from: $0.baseAddress!, count: samples.count) }
         return try AudioConverter().resampleBuffer(pcm)
+    }
+
+    /// Stops capturing and drops the recording.
+    func cancel() {
+        _ = stopCapture()
+    }
+
+    private func stopCapture() -> [Float] {
+        if let configurationObserver { NotificationCenter.default.removeObserver(configurationObserver) }
+        configurationObserver = nil
+        engine?.inputNode.removeTap(onBus: 0)
+        engine?.stop()
+        engine = nil
+        if voiceProcessing { prepareVoiceEngine() }
+        return buffer.drain()
     }
 
     private func prepareVoiceEngine() {

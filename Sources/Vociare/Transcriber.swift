@@ -37,6 +37,11 @@ final class Transcriber {
         _ = loadingTask()
     }
 
+    /// A dictation warmed up for and then cancelled: the model unloads after the idle timeout as after a transcription.
+    func coolDown() {
+        scheduleUnload()
+    }
+
     /// `latinScriptOnly` drops Cyrillic and Greek tokens, which Parakeet sometimes emits for Latin-script speech.
     func transcribe(_ samples: [Float], latinScriptOnly: Bool = false) async throws -> String {
         unloadTask?.cancel()
