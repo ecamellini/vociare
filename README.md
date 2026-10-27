@@ -48,7 +48,7 @@ git pull && ./scripts/install.sh
 
 This rebuilds and reinstalls with the same signing identity, so the permissions you granted are kept.
 
-Versions from October 2026 on download the model again (~470 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it. From late October 2026 Vociare uses a more accurate encoder, `Encoder_v2.mlmodelc` (~570 MB, downloaded once into the same folder); the old `Encoder.mlmodelc` there can go too, unless another app uses it.
+Versions from October 2026 on download the model again (~600 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it. From late October 2026 Vociare uses a more accurate encoder, `Encoder_v2.mlmodelc` (~570 MB, downloaded once into the same folder); the old `Encoder.mlmodelc` there can go too, unless another app uses it.
 
 ## Troubleshooting
 
