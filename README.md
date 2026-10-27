@@ -53,6 +53,7 @@ Versions from October 2026 on download the model again (~600 MB) into `parakeet-
 ## Troubleshooting
 
 - **Holding right Command does nothing**: open the menu bar icon; its first line names a missing permission.
+- **The menu bar icon is hidden behind the notch**: open Vociare again from Spotlight (⌘ Space, "Vociare") and the menu appears under the pointer.
 - **The overlay shows but no text arrives**: look in **Recent**. If it's empty, watch the log while you dictate:
   ```sh
   /usr/bin/log stream --level info --predicate 'subsystem == "me.ecamel.vociare"'

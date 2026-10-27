@@ -62,6 +62,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hotkey.start()
     }
 
+    /// Opening Vociare again (Spotlight, Finder) shows its menu under the pointer: with a crowded menu bar the
+    /// notch can hide the icon.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        guard let menu = statusItem?.menu else { return false }
+        NSApp.activate()
+        // After returning, so the reopen event isn't held up by the menu's tracking loop.
+        DispatchQueue.main.async { menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil) }
+        return false
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         statusLine.title =
             !hotkey.isRunning ? "Needs Accessibility permission"
