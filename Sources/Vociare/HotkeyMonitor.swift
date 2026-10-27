@@ -2,7 +2,8 @@ import AppKit
 import Carbon.HIToolbox
 import OSLog
 
-/// Reports long presses of right Command. A short tap, a Command+key combo or a Command+click stays a normal one.
+/// Reports long presses of right Command, and Esc during one. A short tap, a Command+key combo or a Command+click
+/// stays a normal one.
 @MainActor
 final class HotkeyMonitor {
     // Device-dependent flag for the right Command key (NX_DEVICERCMDKEYMASK).
@@ -11,16 +12,18 @@ final class HotkeyMonitor {
     private let holdThreshold: TimeInterval
     private let onStart: () -> Void
     private let onStop: () -> Void
+    private let onCancel: () -> Void
     private var tap: CFMachPort?
     private var retryTimer: Timer?
     private var holdTimer: Timer?
     private var isPressed = false
     private var isActive = false
 
-    init(holdThreshold: TimeInterval, onStart: @escaping () -> Void, onStop: @escaping () -> Void) {
+    init(holdThreshold: TimeInterval, onStart: @escaping () -> Void, onStop: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.holdThreshold = holdThreshold
         self.onStart = onStart
         self.onStop = onStop
+        self.onCancel = onCancel
     }
 
     var isRunning: Bool { tap != nil }
@@ -65,6 +68,10 @@ final class HotkeyMonitor {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
+        case .keyDown where isActive && event.getIntegerValueField(.keyboardEventKeycode) == kVK_Escape:
+            // Releasing the key afterwards does nothing.
+            isActive = false
+            onCancel()
         case .keyDown, .leftMouseDown, .rightMouseDown:
             holdTimer?.invalidate()
         case .flagsChanged where event.getIntegerValueField(.keyboardEventKeycode) == kVK_RightCommand:
