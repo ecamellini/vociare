@@ -36,6 +36,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.button?.image = VociareIcon.menuBarImage(recording: false)
         let menu = NSMenu()
         menu.delegate = self
+        // Otherwise NSMenu enables every item with a target, and menuNeedsUpdate's isEnabled does nothing.
+        menu.autoenablesItems = false
+        statusLine.isEnabled = false
         menu.addItem(statusLine)
         menu.addItem(.separator())
         pasteLastItem.target = self
