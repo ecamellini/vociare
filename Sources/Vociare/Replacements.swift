@@ -31,6 +31,12 @@ enum Replacements {
         }
     }
 
+    /// The words rules write, spelled as the user wants them: names, so their capitals stay.
+    static var words: Set<String> {
+        guard let file = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+        return Set(rules(from: file).flatMap { $0.replacement.split(whereSeparator: \.isWhitespace).map(String.init) })
+    }
+
     static func apply(_ rules: [Rule], to text: String) -> String {
         rules.reduce(text) { text, rule in
             rule.pattern.stringByReplacingMatches(

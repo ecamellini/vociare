@@ -10,6 +10,7 @@ enum Paster {
     private static let concealedType = NSPasteboard.PasteboardType("org.nspasteboard.ConcealedType")
 
     static func paste(_ text: String) {
+        let text = TextContext.fit(text)
         let pasteboard = NSPasteboard.general
         let saved = (pasteboard.pasteboardItems ?? []).map { item in
             Dictionary(uniqueKeysWithValues: item.types.compactMap { type in item.data(forType: type).map { (type, $0) } })
