@@ -20,7 +20,8 @@ fi
 security delete-generic-password -s vociare-signing -a "$USER" >/dev/null 2>&1 || true
 
 rm -rf "$HOME/Library/Caches/me.ecamel.vociare" "$HOME/Library/Caches/Vociare" \
-  "$HOME/Library/HTTPStorages/me.ecamel.vociare" "$HOME/Library/HTTPStorages/Vociare"
+  "$HOME/Library/HTTPStorages/me.ecamel.vociare" "$HOME/Library/HTTPStorages/Vociare" \
+  "$HOME/Library/Application Support/Vociare"
 # Menu settings; the bare binary (`swift build` output) reads them under its executable name.
 defaults delete me.ecamel.vociare >/dev/null 2>&1 || true
 defaults delete Vociare >/dev/null 2>&1 || true

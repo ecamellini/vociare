@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private static let voiceProcessingKey = "voiceProcessing"
     private lazy var latinItem = NSMenuItem(title: "Latin Alphabet Only", action: #selector(toggleLatinScriptOnly), keyEquivalent: "")
     static let latinScriptOnlyKey = "latinScriptOnly"
+    private lazy var replacementsItem = NSMenuItem(title: "Edit Replacements…", action: #selector(editReplacements), keyEquivalent: "")
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
     private let recentItem = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
     private var isRecording = false
@@ -53,6 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         latinItem.target = self
         latinItem.toolTip = "Drop Cyrillic and Greek letters, which the model sometimes writes for Latin-script languages"
         menu.addItem(latinItem)
+        replacementsItem.target = self
+        replacementsItem.toolTip = "Rules that fix words the model gets wrong, such as cloud code -> Claude Code"
+        menu.addItem(replacementsItem)
         loginItem.target = self
         menu.addItem(loginItem)
         menu.addItem(NSMenuItem(title: "Quit Vociare", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -133,6 +137,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         defaults.set(!defaults.bool(forKey: Self.latinScriptOnlyKey), forKey: Self.latinScriptOnlyKey)
     }
 
+    @objc private func editReplacements() {
+        let url = Replacements.url
+        if !FileManager.default.fileExists(atPath: url.path) {
+            do {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try Data(Replacements.template.utf8).write(to: url)
+            } catch {
+                logger.error("Creating the replacements file failed: \(error, privacy: .public)")
+                return
+            }
+        }
+        NSWorkspace.shared.open(url)
+    }
+
     private var modelStatus: String {
         switch transcriber.modelState {
         case .unloaded: "model unloaded"
@@ -188,8 +206,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 if pendingTranscriptions == 0 && !isRecording { overlay.hide() }
             }
             do {
-                let text = try await transcriber.transcribe(
-                    try recorder.stop(), latinScriptOnly: UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey))
+                let text = Replacements.apply(to: try await transcriber.transcribe(
+                    try recorder.stop(), latinScriptOnly: UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey)))
                 logger.notice("Transcribed \(text.count) characters")
                 guard !text.isEmpty else { return }
                 history = Array(([text] + history).prefix(Self.historyLimit))

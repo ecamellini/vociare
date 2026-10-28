@@ -12,6 +12,7 @@ Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: 
 - Changed your mind? Press **Esc** while still holding right Command: nothing is transcribed or pasted.
 - **Reduce Background Noise** in the menu turns on macOS voice processing: echo cancellation, noise suppression, and the Mic Mode menu in Control Center (pick Voice Isolation there while dictating; macOS remembers it). Vociare sets it up in the background, so dictation still starts right away; only the first one after switching microphone takes about a second more, so wait for the chime.
 - **Latin Alphabet Only** in the menu stops the model from writing in Cyrillic or Greek, which it occasionally does with Latin-script languages such as Italian. Leave it off if you dictate in Russian, Ukrainian or Bulgarian.
+- **Edit Replacements…** in the menu opens `~/Library/Application Support/Vociare/replacements.txt`, for names the model keeps getting wrong. One rule per line, `cloud code, claud code -> Claude Code`: the words it writes, comma-separated, and the right text. Rules ignore case, match whole words only, and apply from top to bottom to every dictation, Recent included, from the next one on.
 - Text is pasted through the clipboard, and your previous clipboard comes back half a second later, unless you copied something in the meantime. A password copied from a password manager is cleared rather than restored.
 - If you switched apps while Vociare was transcribing, or no text field had focus, the text isn't lost: click into the field and pick **Paste Last Dictation** or **Recent** from the menu bar icon. The last 10 dictations are kept in memory only and are gone when Vociare quits.
 
@@ -67,7 +68,7 @@ Versions from October 2026 on download the model again (~600 MB) into `parakeet-
 ./scripts/uninstall.sh
 ```
 
-Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings and Vociare's privacy permissions. It then asks whether to delete the downloaded model too: the model lives in FluidAudio's shared folder, where other apps built on FluidAudio may use it. Without a terminal to ask in, the model is kept.
+Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings, your replacement rules and Vociare's privacy permissions. It then asks whether to delete the downloaded model too: the model lives in FluidAudio's shared folder, where other apps built on FluidAudio may use it. Without a terminal to ask in, the model is kept.
 
 ## Development
 
