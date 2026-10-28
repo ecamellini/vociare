@@ -15,8 +15,8 @@ enum Replacements {
 
     static let template = """
         # One rule per line: what the model writes, comma-separated, then -> and the right text.
-        # Case-insensitive, whole words only, applied from top to bottom. For example:
-        # cloud code, claud code -> Claude Code
+        # Case-insensitive, whole words only, applied from top to bottom. Lines starting with # are ignored.
+        cloud code, claud code -> Claude Code
 
         """
 
