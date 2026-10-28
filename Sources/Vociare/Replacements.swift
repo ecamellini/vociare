@@ -11,10 +11,7 @@ enum Replacements {
 
     private static let logger = Logger(subsystem: "me.ecamel.vociare", category: "Replacements")
 
-    static var url: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Vociare/replacements.txt")
-    }
+    static var url: URL { .applicationSupportDirectory.appending(path: "Vociare/replacements.txt") }
 
     static let template = """
         # One rule per line: what the model writes, comma-separated, then -> and the right text.
@@ -24,8 +21,14 @@ enum Replacements {
         """
 
     static func apply(to text: String) -> String {
-        guard let file = try? String(contentsOf: url, encoding: .utf8) else { return text }
-        return apply(rules(from: file), to: text)
+        do {
+            return apply(rules(from: try String(contentsOf: url, encoding: .utf8)), to: text)
+        } catch CocoaError.fileReadNoSuchFile {
+            return text
+        } catch {
+            logger.error("Reading the replacements failed: \(error, privacy: .public)")
+            return text
+        }
     }
 
     static func apply(_ rules: [Rule], to text: String) -> String {
@@ -51,7 +54,7 @@ enum Replacements {
             // Longest first, so "claud code" wins over "claud" in the same rule; any run of spaces matches a space.
             let alternatives = variants.sorted { $0.joined(separator: " ").count > $1.joined(separator: " ").count }
                 .map { $0.map { NSRegularExpression.escapedPattern(for: String($0)) }.joined(separator: "\\s+") }
-            let pattern = "(?<![\\p{L}\\p{N}])(?:" + alternatives.joined(separator: "|") + ")(?![\\p{L}\\p{N}])"
+            let pattern = "(?<![\\p{L}\\p{M}\\p{N}])(?:" + alternatives.joined(separator: "|") + ")(?![\\p{L}\\p{M}\\p{N}])"
             // Every variant is escaped, so the pattern always compiles.
             return Rule(pattern: try! NSRegularExpression(pattern: pattern, options: .caseInsensitive), replacement: replacement)
         }
