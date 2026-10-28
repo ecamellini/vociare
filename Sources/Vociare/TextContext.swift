@@ -20,34 +20,48 @@ enum TextContext {
         }
         logger.notice(
             "Pasting in \(app, privacy: .public) after \(kind(before.last), privacy: .public), before \(kind(after.first), privacy: .public)")
-        return fit(text, before: before, after: after, names: Replacements.words)
+        return fit(text, before: before, after: after, names: Replacements.targets)
     }
 
     /// `before` ends at the cursor (empty at the start of the field), `after` starts there. `names` keep their capital.
     static func fit(_ text: String, before: String, after: String, names: Set<String>) -> String {
         guard let first = text.first else { return text }
         var text = text
-        // Mid-sentence: after a word or a comma, not after a full stop or at the start of a line.
+        // Mid-sentence: right after a word, a comma or an elision on the same line; not after a full stop,
+        // a list bullet, a heading mark or an emoji.
         let previous = before.reversed().first { !$0.isWhitespace || $0.isNewline }
-        if let previous, !previous.isNewline, !".!?…".contains(previous), first.isUppercase, !keepsCapital(text, names: names) {
+        if let previous, previous.isLetter || previous.isNumber || ",;:'’".contains(previous), first.isUppercase,
+            !keepsCapital(text, names: names)
+        {
             text = first.lowercased() + text.dropFirst()
         }
-        if let last = before.last, last.isLetter || last.isNumber || ".,;:!?)]}»”…%".contains(last) { text = " " + text }
+        if let last = before.last, !last.isWhitespace, !opens(last, after: before.dropLast().last) { text = " " + text }
         if let next = after.first, next.isLetter || next.isNumber { text += " " }
         return text
     }
 
-    /// Names, acronyms and "I" keep their capital; a word only known capitalized is a name too ("Milano").
+    /// Opening brackets and quotes, an elision ("l'") and a slash take the next word without a space.
+    private static func opens(_ character: Character, after previous: Character?) -> Bool {
+        if "([{“‘«¿¡'’/".contains(character) { return true }
+        // A straight quote opens after a space and closes after a word.
+        return character == "\"" && (previous.map { $0.isWhitespace || "([{".contains($0) } ?? true)
+    }
+
+    /// Names, acronyms and the English "I" keep their capital; a word only known capitalized is a name too ("Milano").
     private static func keepsCapital(_ text: String, names: Set<String>) -> Bool {
         let word = String(text.prefix { $0.isLetter })
-        if word.isEmpty || word == "I" || names.contains(word) || (word.count > 1 && word == word.uppercased()) { return true }
+        if word.isEmpty || (word.count > 1 && word == word.uppercased()) { return true }
+        if names.contains(where: { text.hasPrefix($0) && !(text.dropFirst($0.count).first?.isLetter ?? false) }) { return true }
+        let language = NLLanguageRecognizer.dominantLanguage(for: text)
+        // Not the Italian article.
+        if word == "I", (language ?? .english) == .english { return true }
         let tagger = NLTagger(tagSchemes: [.nameType])
         tagger.string = text
         let tag = tagger.tag(at: text.startIndex, unit: .word, scheme: .nameType).0
         if [.personalName, .placeName, .organizationName].contains(tag) { return true }
-        let language = NLLanguageRecognizer.dominantLanguage(for: text)?.rawValue
         let misspelled = NSSpellChecker.shared.checkSpelling(
-            of: word.lowercased(), startingAt: 0, language: language, wrap: false, inSpellDocumentWithTag: 0, wordCount: nil)
+            of: word.lowercased(), startingAt: 0, language: language?.rawValue, wrap: false, inSpellDocumentWithTag: 0,
+            wordCount: nil)
         return misspelled.location != NSNotFound
     }
 
@@ -61,7 +75,11 @@ enum TextContext {
         let element = focused as! AXUIElement
         var range = CFRange()
         guard let value = attribute(element, kAXSelectedTextRangeAttribute), CFGetTypeID(value) == AXValueGetTypeID(),
-            AXValueGetValue(value as! AXValue, .cfRange, &range)
+            AXValueGetValue(value as! AXValue, .cfRange, &range),
+            // Some apps answer kCFNotFound or garbage; past Int32 the arithmetic below could overflow.
+            (0...Int(Int32.max)).contains(range.location), (0...Int(Int32.max)).contains(range.length),
+            // At the start of the field nothing below is read, so check the field really holds text.
+            range.location > 0 || attribute(element, kAXNumberOfCharactersAttribute) != nil
         else { return nil }
         let start = max(0, range.location - lookBehind)
         guard let before = string(element, from: start, length: range.location - start) else { return nil }

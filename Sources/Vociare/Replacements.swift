@@ -31,10 +31,16 @@ enum Replacements {
         }
     }
 
-    /// The words rules write, spelled as the user wants them: names, so their capitals stay.
-    static var words: Set<String> {
+    /// What the rules write, spelled as the user wants it: names, which keep their capital. Parsed without
+    /// `rules(from:)`, so malformed lines are logged once per dictation, by `apply`.
+    static var targets: Set<String> {
         guard let file = try? String(contentsOf: url, encoding: .utf8) else { return [] }
-        return Set(rules(from: file).flatMap { $0.replacement.split(whereSeparator: \.isWhitespace).map(String.init) })
+        return Set(file.components(separatedBy: .newlines).compactMap { line in
+            let sides = line.components(separatedBy: "->")
+            guard sides.count == 2, !line.trimmingCharacters(in: .whitespaces).hasPrefix("#") else { return nil }
+            let target = sides[1].trimmingCharacters(in: .whitespaces)
+            return target.isEmpty ? nil : target
+        })
     }
 
     static func apply(_ rules: [Rule], to text: String) -> String {
