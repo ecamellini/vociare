@@ -56,7 +56,9 @@ enum Vociare {
             let samples = try AudioConverter().resampleAudioFile(URL(fileURLWithPath: path))
             let latinScriptOnly = UserDefaults.standard.bool(forKey: AppDelegate.latinScriptOnlyKey)
             let clock = ContinuousClock()
-            let cold = try await clock.measure { print(try await transcriber.transcribe(samples, latinScriptOnly: latinScriptOnly)) }
+            let cold = try await clock.measure {
+                print(Replacements.apply(to: try await transcriber.transcribe(samples, latinScriptOnly: latinScriptOnly)))
+            }
             let warm = try await clock.measure { _ = try await transcriber.transcribe(samples, latinScriptOnly: latinScriptOnly) }
             print("cold: \(cold), warm: \(warm)")
         } catch {
