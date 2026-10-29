@@ -14,12 +14,12 @@ enum TextContext {
     /// apps), a trailing space keeps the next dictation apart.
     static func fit(_ text: String) -> String {
         let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
-        guard let (before, after) = around() else {
+        guard let (before, after, field) = around() else {
             logger.notice("No text context in \(app, privacy: .public): adding a trailing space")
             return text + " "
         }
         logger.notice(
-            "Pasting in \(app, privacy: .public) after \(kind(before.last), privacy: .public), before \(kind(after.first), privacy: .public)")
+            "Pasting in \(app, privacy: .public) (\(field, privacy: .public)) after \(kind(before.last), privacy: .public), before \(kind(after.first), privacy: .public)")
         return fit(text, before: before, after: after, names: Replacements.targets)
     }
 
@@ -65,8 +65,9 @@ enum TextContext {
         return misspelled.location != NSNotFound
     }
 
-    /// The text just before the cursor (or the selection it replaces) and the character after it.
-    private static func around() -> (before: String, after: String)? {
+    /// The text just before the cursor (or the selection it replaces), the character after it, and for the log
+    /// the field's role and where the cursor is, in numbers only.
+    private static func around() -> (before: String, after: String, field: String)? {
         let system = AXUIElementCreateSystemWide()
         // On the system-wide element it applies to every call: a hung app mustn't hold up the paste.
         AXUIElementSetMessagingTimeout(system, 0.2)
@@ -78,13 +79,17 @@ enum TextContext {
             AXValueGetValue(value as! AXValue, .cfRange, &range),
             // Some apps answer kCFNotFound or garbage; past Int32 the arithmetic below could overflow.
             (0...Int(Int32.max)).contains(range.location), (0...Int(Int32.max)).contains(range.length),
-            // At the start of the field nothing below is read, so check the field really holds text.
-            range.location > 0 || attribute(element, kAXNumberOfCharactersAttribute) != nil
+            // Terminals report the cursor at 0 wherever it is, and at a real start of field the trailing space
+            // of the fallback costs nothing.
+            range.location > 0
         else { return nil }
         let start = max(0, range.location - lookBehind)
         guard let before = string(element, from: start, length: range.location - start) else { return nil }
+        let role = attribute(element, kAXRoleAttribute) as? String ?? "?"
+        let count = (attribute(element, kAXNumberOfCharactersAttribute) as? Int).map(String.init) ?? "?"
+        let field = "\(role), cursor at \(range.location)+\(range.length) of \(count), last \(category(before.unicodeScalars.last))"
         // Past the end of the text some apps answer with an error rather than an empty string.
-        return (before, string(element, from: range.location + range.length, length: 1) ?? "")
+        return (before, string(element, from: range.location + range.length, length: 1) ?? "", field)
     }
 
     private static func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
@@ -100,6 +105,11 @@ enum TextContext {
         let status = AXUIElementCopyParameterizedAttributeValue(
             element, kAXStringForRangeParameterizedAttribute as CFString, parameter, &value)
         return status == .success ? value as? String : nil
+    }
+
+    private static func category(_ scalar: Unicode.Scalar?) -> String {
+        guard let scalar else { return "none" }
+        return "\(scalar.properties.generalCategory)" + (scalar == "\u{FFFC}" ? " (object)" : "")
     }
 
     /// For the log, which never holds the text itself.
