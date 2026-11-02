@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     )
     private var statusItem: NSStatusItem?
     private let statusLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let keyItem = NSMenuItem(title: "Dictation Key", action: nil, keyEquivalent: "")
+    private static let dictationKeyKey = "dictationKey"
     private lazy var loginItem = NSMenuItem(title: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
     private lazy var noiseItem = NSMenuItem(title: "Reduce Background Noise", action: #selector(toggleVoiceProcessing), keyEquivalent: "")
     private static let voiceProcessingKey = "voiceProcessing"
@@ -50,6 +52,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         recentItem.submenu = NSMenu()
         menu.addItem(recentItem)
         menu.addItem(.separator())
+        keyItem.submenu = NSMenu()
+        keyItem.submenu?.items = DictationKey.allCases.map { key in
+            let item = NSMenuItem(title: key.menuTitle, action: #selector(selectDictationKey(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = key.rawValue
+            return item
+        }
+        menu.addItem(keyItem)
         noiseItem.target = self
         menu.addItem(noiseItem)
         latinItem.target = self
@@ -68,6 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         AXIsProcessTrustedWithOptions([prompt: true] as CFDictionary)
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
         recorder.voiceProcessing = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey)
+        hotkey.key = UserDefaults.standard.string(forKey: Self.dictationKeyKey).flatMap { DictationKey(rawValue: $0) } ?? .rightCommand
         hotkey.start()
     }
 
@@ -93,10 +104,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : AVCaptureDevice.authorizationStatus(for: .audio) != .authorized ? "Needs Microphone permission"
             : !Recorder.hasInputDevice ? "No microphone connected"
             : microphoneFailed ? "The microphone didn't start: check Sound → Input"
-            : "Hold right ⌘ to dictate · " + modelStatus
+            : "Hold \(hotkey.key.name) to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         noiseItem.state = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey) ? .on : .off
         latinItem.state = UserDefaults.standard.bool(forKey: Self.latinScriptOnlyKey) ? .on : .off
+        for item in keyItem.submenu?.items ?? [] {
+            item.state = item.representedObject as? String == hotkey.key.rawValue ? .on : .off
+        }
         pasteLastItem.representedObject = history.first
         pasteLastItem.isEnabled = !history.isEmpty
         recentItem.isEnabled = !history.isEmpty
@@ -128,6 +142,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             logger.error("Launch at login change failed: \(error)")
         }
+    }
+
+    @objc private func selectDictationKey(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let key = DictationKey(rawValue: raw) else { return }
+        hotkey.key = key
+        UserDefaults.standard.set(raw, forKey: Self.dictationKeyKey)
     }
 
     @objc private func toggleVoiceProcessing() {
