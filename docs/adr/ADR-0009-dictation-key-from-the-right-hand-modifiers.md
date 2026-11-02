@@ -8,7 +8,7 @@ Right Command was the only dictation key, and some keyboards have none, or their
 
 ## Decision
 
-A **Dictation Key** menu with right Command (the default), right Option and right Control, each held alone for 250 ms. The model's idle unload stays fixed at 10 minutes.
+A **Dictation Key** menu with right Command (the default), right Option and right Control, each held alone as before. The model's idle unload stays fixed.
 
 Rejected:
 
@@ -23,3 +23,8 @@ Rejected:
 
 - **[PROS]** Keyboards without right Command can dictate, with no change to how a dictation starts, stops or cancels.
 - **[CONS]** MacBook keyboards have no right Control, so they get two choices.
+- **[CONS]** On layouts where right Option types characters (@, # and [ on the Italian one), a pause before the letter starts a dictation, as with the left modifiers.
+
+## Relevant Documents
+
+- [#37: Pick the dictation key from the menu](https://github.com/ecamellini/vociare/pull/37)

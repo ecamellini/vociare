@@ -57,6 +57,7 @@ final class HotkeyMonitor {
 
     var key: DictationKey = .rightCommand {
         didSet {
+            guard key != oldValue else { return }
             // The old key's release would never arrive: drop its press, and any dictation it started.
             holdTimer?.invalidate()
             isPressed = false
