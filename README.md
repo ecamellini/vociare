@@ -2,66 +2,51 @@
 
 *Vociare* (Italian, /voˈtʃaːre/): to chatter, to talk loudly.
 
-Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted into the app you're typing in. Your voice and text never leave your Mac; the only download is the model.
+Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted where you're typing. Voice and text never leave your Mac; the only download is the model.
 
-> **AI-assisted code.** Vociare is a vibe-coded app: its code was written by an AI coding agent, directed, reviewed and tested by a human. Read it with that in mind before relying on it.
+> **AI-assisted code.** Vociare is vibe-coded: written by an AI coding agent, directed, reviewed and tested by a human. Keep that in mind before relying on it.
 
-- Transcription runs on-device with NVIDIA's [Parakeet TDT 0.6B v3](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) (25 European languages, detected automatically) through [FluidAudio](https://github.com/FluidInference/FluidAudio), on the Apple Neural Engine.
-- The model loads when you start dictating and unloads after 10 idle minutes. Reloading takes about a second and overlaps with your speech. After a macOS update the first dictation can take half a minute, while Core ML prepares the model for the Neural Engine again.
-- A quick tap, a Command+key shortcut or a Command+click works as usual: dictation starts only when right Command is held on its own for 250 ms.
-- Changed your mind? Press **Esc** while still holding right Command: nothing is transcribed or pasted.
-- **Reduce Background Noise** in the menu turns on macOS voice processing: echo cancellation, noise suppression, and the Mic Mode menu in Control Center (pick Voice Isolation there while dictating; macOS remembers it). Vociare sets it up in the background, so dictation still starts right away; only the first one after switching microphone takes about a second more, so wait for the chime.
-- **Latin Alphabet Only** in the menu stops the model from writing in Cyrillic or Greek, which it occasionally does with Latin-script languages such as Italian. Leave it off if you dictate in Russian, Ukrainian or Bulgarian.
-- **Edit Replacements…** in the menu opens `~/Library/Application Support/Vociare/replacements.txt`, for names the model keeps getting wrong. One rule per line, `cloud code, claud code -> Claude Code`: the words it writes, comma-separated, and the right text. Rules ignore case, match whole words only, and apply from top to bottom to every dictation, Recent included, from the next one on.
-- The model writes whole sentences, so Vociare fits each dictation to the text around the cursor: a space unless the cursor follows a space or an opening bracket or quote, a lowercase first word right after a word or a comma, a space before a word right after the cursor. Names keep their capital; one it lowercases anyway (a brand, say) can go in the replacements as `google -> Google`. Where the app doesn't expose its text (terminals, some Electron apps), it adds a space after the dictation instead.
-- Text is pasted through the clipboard, and your previous clipboard comes back half a second later, unless you copied something in the meantime. A password copied from a password manager is cleared rather than restored.
-- If you switched apps while Vociare was transcribing, or no text field had focus, the text isn't lost: click into the field and pick **Paste Last Dictation** or **Recent** from the menu bar icon. The last 10 dictations are kept in memory only and are gone when Vociare quits.
+## How it works
+
+- Transcription runs on the Neural Engine with NVIDIA's [Parakeet TDT 0.6B v3](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) (25 European languages, auto-detected) through [FluidAudio](https://github.com/FluidInference/FluidAudio). The model loads when you dictate (about a second, overlapping your speech) and unloads after 10 idle minutes. After a macOS update the first dictation can take half a minute while Core ML re-prepares it.
+- Dictation starts only when right Command is held alone for 250 ms, so taps, shortcuts and Command+click work as usual. **Esc** while holding cancels.
+- Each dictation fits the text around the cursor: a space unless it follows a space or an opening bracket or quote, a lowercase first word after a word or a comma (names keep their capital), a space before a word right after the cursor. Where the app hides its text (terminals, some Electron apps), a trailing space is added instead.
+- Text is pasted through the clipboard, which comes back half a second later unless you copied something meanwhile. A copied password is cleared instead of restored.
+- Switched apps or no field focused? Pick **Paste Last Dictation** or **Recent** in the menu. The last 10 dictations are kept in memory only.
+
+Menu options:
+
+- **Reduce Background Noise**: macOS voice processing (echo cancellation, noise suppression, and Control Center's Mic Mode, where you can pick Voice Isolation). The first dictation after switching microphone takes about a second more: wait for the chime.
+- **Latin Alphabet Only**: stops the model drifting into Cyrillic or Greek with Latin-script languages like Italian. Leave it off for Russian, Ukrainian or Bulgarian.
+- **Edit Replacements…**: opens `~/Library/Application Support/Vociare/replacements.txt` for words the model gets wrong. One rule per line, e.g. `cloud code, claud code -> Claude Code` or `google -> Google`; case-insensitive, whole words, applied top to bottom from the next dictation on, Recent included.
 
 ## Requirements
 
 - Apple Silicon Mac, macOS 14 or later.
-- Xcode 26 or later, or its Command Line Tools (`xcode-select --install`): the build needs Swift 6.2 for FluidAudio's package traits.
-- No prebuilt release: Vociare is built from source.
+- Xcode 26+ or its Command Line Tools (`xcode-select --install`): FluidAudio's package traits need Swift 6.2.
+- No prebuilt release: build from source.
 
-## Install
-
-```sh
-./scripts/install.sh
-```
-
-It builds Vociare, downloads the model (~600 MB, into `~/Library/Application Support/FluidAudio/Models`; skipped when already there), installs the app as `/Applications/Vociare.app` (replacing and relaunching any running copy) and starts it.
-
-On first launch Vociare asks for two permissions: **Microphone**, to record while you hold the key, and **Accessibility**, to detect the key and paste with Cmd+V. Accept the microphone prompt, then turn Vociare on in System Settings → Privacy & Security → Accessibility; no relaunch needed. The first line of the menu bar menu names any missing permission, and reads "Hold right ⌘ to dictate" once everything is set.
-
-### Why install.sh creates a keychain
-
-macOS ties the Microphone and Accessibility permissions to the app's signature, so an unsigned rebuild would lose them. On the first run the script:
-
-- creates a self-signed certificate with a non-exportable key in a dedicated keychain, `~/Library/Keychains/vociare-signing.keychain-db`;
-- stores that keychain's random password in your login keychain (item `vociare-signing`), so later installs sign without prompting;
-- adds the keychain to your keychain search list, which `codesign` needs to find the certificate.
-
-The keychain locks again right after signing, and also after 5 minutes or when the Mac sleeps. The cost of signing without a prompt: any program running as you could read the stored password and sign itself as Vociare, inheriting its Microphone and Accessibility permissions. A developer certificate that `codesign` can use without asking carries the same risk.
-
-## Update
+## Install and update
 
 ```sh
-git pull && ./scripts/install.sh
+./scripts/install.sh                # update: git pull && ./scripts/install.sh
 ```
 
-This rebuilds and reinstalls with the same signing identity, so the permissions you granted are kept.
+It builds Vociare, downloads the model once (~600 MB, into `~/Library/Application Support/FluidAudio/Models`), installs `/Applications/Vociare.app` (replacing and relaunching any running copy) and starts it. Grant **Microphone** (to record) at the prompt and **Accessibility** (to detect the key and paste) in System Settings → Privacy & Security; no relaunch needed. The menu's first line names any missing permission.
 
-Versions from October 2026 on download the model again (~600 MB) into `parakeet-tdt-0.6b-v3`. Earlier ones kept it in `parakeet-tdt-0.6b-v3-coreml`, in the same folder: delete that one if no other app uses it. From late October 2026 Vociare uses a more accurate encoder, `Encoder_v2.mlmodelc` (~570 MB, downloaded once into the same folder); the old `Encoder.mlmodelc` there can go too, unless another app uses it.
+**Signing.** macOS ties these permissions to the app's signature, so the script signs with a self-signed certificate (non-exportable key) and rebuilds keep your grants. On first run it creates a dedicated keychain, `~/Library/Keychains/vociare-signing.keychain-db`, stores its random password in your login keychain (item `vociare-signing`) and adds it to the keychain search list for `codesign`. It relocks after signing, after 5 minutes or on sleep. The trade-off: any program running as you could read that password and sign itself as Vociare, inheriting its permissions, as with any developer certificate usable without a prompt.
+
+**Upgrading from before late October 2026** downloads the model again, into `parakeet-tdt-0.6b-v3` with the more accurate `Encoder_v2.mlmodelc`. Unless another app uses them, delete the old `parakeet-tdt-0.6b-v3-coreml` folder and `parakeet-tdt-0.6b-v3/Encoder.mlmodelc`.
 
 ## Troubleshooting
 
-- **Holding right Command does nothing**: open the menu bar icon; its first line names a missing permission.
-- **The menu bar icon is hidden behind the notch**: open Vociare again from Spotlight (⌘ Space, "Vociare") and the menu appears under the pointer.
-- **The overlay shows but no text arrives**: look in **Recent**. If it's empty, watch the log while you dictate:
+- **Holding right Command does nothing**: the menu's first line names a missing permission.
+- **Menu bar icon hidden behind the notch**: open Vociare again from Spotlight; the menu appears under the pointer.
+- **Overlay shows but no text arrives**: check **Recent**. If it's empty, watch the log while dictating:
   ```sh
   /usr/bin/log stream --level info --predicate 'subsystem == "me.ecamel.vociare"'
   ```
-- **No microphone connected**: Vociare doesn't start recording. Connect one or pick it in System Settings → Sound → Input.
+- **No microphone connected**: recording doesn't start. Connect one or pick it in System Settings → Sound → Input.
 
 ## Uninstall
 
@@ -69,25 +54,23 @@ Versions from October 2026 on download the model again (~600 MB) into `parakeet-
 ./scripts/uninstall.sh
 ```
 
-Removes the app and its login item, the signing keychain (with its search list entry and stored password), caches, menu settings, your replacement rules and Vociare's privacy permissions. It then asks whether to delete the downloaded model too: the model lives in FluidAudio's shared folder, where other apps built on FluidAudio may use it. Without a terminal to ask in, the model is kept.
+Removes the app, its login item, the signing keychain (with search list entry and stored password), caches, settings, replacement rules and privacy permissions. It asks before deleting the model, since other FluidAudio apps may share it; without a terminal, the model is kept.
 
 ## Development
 
 ```sh
-swift build -c release --build-system native
+swift build -c release --build-system native   # native: needed with only the Command Line Tools
 ```
 
-`--build-system native` is needed when only the Command Line Tools are installed. A few flags work without the UI:
-
-- `Vociare --download-model` downloads the model if missing and loads it once.
-- `Vociare --transcribe <audio file>` runs the model on a file and prints the text with cold and warm timings.
-- `Vociare --render-icon <dir>.iconset` renders the app icon, drawn in code in `VociareIcon.swift`.
-- `Vociare --unregister-login-item` removes the login item; `uninstall.sh` runs it before deleting the app.
+- `Vociare --download-model`: download the model if missing and load it once.
+- `Vociare --transcribe <audio file>`: print the text with cold and warm timings.
+- `Vociare --render-icon <dir>.iconset`: render the icon, drawn in `VociareIcon.swift`.
+- `Vociare --unregister-login-item`: remove the login item (`uninstall.sh` runs it).
 
 ## Credits
 
 - [FluidAudio](https://github.com/FluidInference/FluidAudio) by FluidInference, Apache License 2.0.
-- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The model is downloaded from Hugging Face at install time and not redistributed here.
+- [Parakeet TDT 0.6B v3](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA, in the [Core ML conversion](https://huggingface.co/FluidInference/parakeet-tdt-0.6b-v3-coreml) by FluidInference, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Downloaded from Hugging Face at install time, not redistributed here.
 
 ## License
 
