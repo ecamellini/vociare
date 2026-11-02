@@ -18,6 +18,12 @@ It builds the app, downloads the model (~600 MB), installs `/Applications/Vociar
 
 The app is signed with a self-signed certificate in its own keychain, so rebuilds keep those permissions. That keychain's password is stored in your login keychain: any program running as you could use it to sign itself as Vociare and inherit them.
 
+## Troubleshooting
+
+- **Holding right Command does nothing**: the menu's first line names a missing permission. No microphone connected also stops recording.
+- **Menu bar icon hidden behind the notch**: open Vociare again from Spotlight; the menu appears under the pointer.
+- **No text arrives**: the dictation is in **Recent**. If it isn't, watch the log (see Development) while dictating.
+
 ## Uninstall
 
 ```sh
