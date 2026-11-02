@@ -24,6 +24,9 @@ trap cleanup EXIT
 # The search list as one path per line, without the quotes and indentation `security` prints.
 user_keychains() { security list-keychains -d user | sed -e 's/^[[:space:]]*"//' -e 's/"$//'; }
 
+# Runs one `security` command read from stdin, so the password in it never shows up in `ps`.
+secure() { printf '%s\n' "$1" | security -i; }
+
 create_identity() {
   echo "First install: creating a self-signed signing identity in $KEYCHAIN, adding it to your keychain search list and storing its password in your login keychain."
   tmp=$(mktemp -d)
@@ -33,14 +36,15 @@ create_identity() {
     -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=critical,codeSigning" \
     -keyout "$tmp/key.pem" -out "$tmp/cert.pem" 2>/dev/null
   # macOS's `security import` only reads PKCS#12 files with the older encryption algorithms.
-  openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -out "$tmp/identity.p12" -passout "pass:$password" \
+  P12_PASSWORD="$password" openssl pkcs12 -export -inkey "$tmp/key.pem" -in "$tmp/cert.pem" -out "$tmp/identity.p12" \
+    -passout env:P12_PASSWORD \
     -keypbe PBE-SHA1-3DES -certpbe PBE-SHA1-3DES -macalg sha1
-  security add-generic-password -U -s "$PASSWORD_SERVICE" -a "$USER" -w "$password"
-  security create-keychain -p "$password" "$KEYCHAIN"
+  secure "add-generic-password -U -s $PASSWORD_SERVICE -a \"$USER\" -w $password"
+  secure "create-keychain -p $password \"$KEYCHAIN\""
   security set-keychain-settings -l -u -t 300 "$KEYCHAIN"
   # -x keeps the private key from ever being exported.
-  security import "$tmp/identity.p12" -k "$KEYCHAIN" -P "$password" -x -T /usr/bin/codesign
-  security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$KEYCHAIN" >/dev/null
+  secure "import \"$tmp/identity.p12\" -k \"$KEYCHAIN\" -P $password -x -T /usr/bin/codesign"
+  secure "set-key-partition-list -S apple-tool:,apple: -s -k $password \"$KEYCHAIN\"" >/dev/null
   # codesign only finds identities in keychains on the search list, even when given --keychain.
   while IFS= read -r keychain; do keychains+=("$keychain"); done < <(user_keychains)
   security list-keychains -d user -s ${keychains[@]+"${keychains[@]}"} "$KEYCHAIN"
@@ -58,7 +62,7 @@ iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 cp Info.plist "$APP/Contents/Info.plist"
 
 [[ -f "$KEYCHAIN" ]] || create_identity
-security unlock-keychain -p "$(security find-generic-password -s "$PASSWORD_SERVICE" -a "$USER" -w)" "$KEYCHAIN"
+secure "unlock-keychain -p $(security find-generic-password -s "$PASSWORD_SERVICE" -a "$USER" -w) \"$KEYCHAIN\""
 codesign --force --keychain "$KEYCHAIN" --sign "$IDENTITY" "$APP"
 security lock-keychain "$KEYCHAIN"
 

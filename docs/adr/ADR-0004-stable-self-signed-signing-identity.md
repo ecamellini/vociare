@@ -23,4 +23,3 @@ Rejected:
 
 - **[PROS]** Rebuilds keep the grants, and installs need no prompt.
 - **[CONS]** Any program running as the user can read the stored password and sign itself as Vociare, inheriting its grants, as with any developer certificate usable without a prompt.
-- **[CONS]** The script passes the password on the command line, visible to other local users in `ps` ([#4](https://github.com/ecamellini/vociare/issues/4)).
