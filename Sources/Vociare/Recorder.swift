@@ -87,6 +87,9 @@ final class Recorder {
         }
     }
 
+    /// False on a Mac with no microphone, such as a Mac mini or a closed laptop with none plugged in.
+    static var hasInputDevice: Bool { defaultInputDevice() != kAudioObjectUnknown }
+
     nonisolated private static func defaultInputDevice() -> AudioDeviceID {
         var device = AudioDeviceID(kAudioObjectUnknown)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
