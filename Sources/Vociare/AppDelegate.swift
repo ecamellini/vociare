@@ -28,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let pasteLastItem = NSMenuItem(title: "Paste Last Dictation", action: nil, keyEquivalent: "")
     private let recentItem = NSMenuItem(title: "Recent", action: nil, keyEquivalent: "")
     private var isRecording = false
+    private var microphoneFailed = false
     private var pendingTranscriptions = 0
     // In memory only, so dictated text never lands on disk.
     private var history: [String] = []
@@ -90,6 +91,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusLine.title =
             !hotkey.isRunning ? "Needs Accessibility permission"
             : AVCaptureDevice.authorizationStatus(for: .audio) != .authorized ? "Needs Microphone permission"
+            : !Recorder.hasInputDevice ? "No microphone connected"
+            : microphoneFailed ? "The microphone didn't start: check Sound → Input"
             : "Hold right ⌘ to dictate · " + modelStatus
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         noiseItem.state = UserDefaults.standard.bool(forKey: Self.voiceProcessingKey) ? .on : .off
@@ -170,8 +173,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if !voiceProcessing { startSound?.play() }
         } catch {
             logger.error("Microphone failed to start: \(error, privacy: .public)")
+            // A missing device has its own status line, which clears as soon as one is connected.
+            microphoneFailed = (error as? RecorderError) != .noInputDevice
+            // Otherwise holding the key does nothing at all; the menu's first line says why.
+            NSSound.beep()
             return
         }
+        microphoneFailed = false
         transcriber.warmUp()
         isRecording = true
         statusItem?.button?.image = VociareIcon.menuBarImage(recording: true)

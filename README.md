@@ -24,7 +24,7 @@ Upgrading from before late October 2026 downloads the model again. Unless anothe
 
 ## Troubleshooting
 
-- **Holding right Command does nothing**: the menu's first line names a missing permission. No microphone connected also stops recording.
+- **Holding right Command does nothing, or beeps**: the menu's first line names what's missing, a permission or a microphone.
 - **Menu bar icon hidden behind the notch**: open Vociare again from Spotlight; the menu appears under the pointer.
 - **First dictation after a macOS update is slow** (about half a minute): Core ML is preparing the model again.
 - **No text arrives**: the dictation is in **Recent**. If it isn't, watch the log (see Development) while dictating.

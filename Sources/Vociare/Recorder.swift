@@ -33,7 +33,15 @@ final class Recorder {
         buffer.reset()
         let tap = Tap(buffer: buffer, onReady: onReady, onLevel: onLevel)
         format = try tap.install(on: engine.inputNode)
-        try engine.start()
+        do {
+            try engine.start()
+        } catch {
+            // The voice engine is kept for the next try, where a second tap on its node would raise an exception;
+            // it's rebuilt then, in case its state is what failed.
+            engine.inputNode.removeTap(onBus: 0)
+            if voiceProcessing { voiceEngine = nil }
+            throw error
+        }
         // Voice processing's aggregate device can reconfigure right after start, and a device can change
         // mid-recording: either stops the engine, which doesn't restart on its own.
         configurationObserver = NotificationCenter.default.addObserver(
@@ -86,6 +94,9 @@ final class Recorder {
             if voiceProcessing, voiceEngine?.device != device { voiceEngine = prepared }
         }
     }
+
+    /// False on a Mac with no microphone, such as a Mac mini or a closed laptop with none plugged in.
+    static var hasInputDevice: Bool { defaultInputDevice() != kAudioObjectUnknown }
 
     nonisolated private static func defaultInputDevice() -> AudioDeviceID {
         var device = AudioDeviceID(kAudioObjectUnknown)
