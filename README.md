@@ -31,10 +31,14 @@ Removes everything Vociare and the install created. It asks before deleting the 
 ## Development
 
 ```sh
-swift build -c release --build-system native
-.build/release/Vociare --transcribe <audio file>
+swift build -c release --build-system native   # native: needed with only the Command Line Tools
 /usr/bin/log stream --level info --predicate 'subsystem == "me.ecamel.vociare"'
 ```
+
+- `Vociare --download-model`: download the model if missing and load it once.
+- `Vociare --transcribe <audio file>`: print the text with cold and warm timings.
+- `Vociare --render-icon <dir>.iconset`: render the icon, drawn in `VociareIcon.swift`.
+- `Vociare --unregister-login-item`: remove the login item (`uninstall.sh` runs it).
 
 ## Credits
 
