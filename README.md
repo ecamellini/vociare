@@ -2,11 +2,9 @@
 
 *Vociare* (Italian, /voˈtʃaːre/): to chatter, to talk loudly.
 
-Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted where you're typing (**Esc** while holding cancels). It runs entirely on your Mac with NVIDIA's Parakeet model, in 25 European languages; your voice never leaves it.
+Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted where you're typing (**Esc** while holding cancels). It runs entirely on your Mac with NVIDIA's Parakeet model, in 25 European languages; your voice never leaves it. From the menu bar icon you can paste a recent dictation again, reduce background noise, and set word replacements for names the model gets wrong (`cloud code -> Claude Code`).
 
 > **AI-assisted code.** Vociare is vibe-coded: written by an AI coding agent, directed, reviewed and tested by a human.
-
-The menu bar icon lets you paste a recent dictation again, reduce background noise, and set word replacements for names the model gets wrong (`cloud code -> Claude Code`).
 
 ## Install
 
