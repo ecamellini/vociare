@@ -62,7 +62,8 @@ iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 cp Info.plist "$APP/Contents/Info.plist"
 
 [[ -f "$KEYCHAIN" ]] || create_identity
-secure "unlock-keychain -p $(security find-generic-password -s "$PASSWORD_SERVICE" -a "$USER" -w) \"$KEYCHAIN\""
+password=$(security find-generic-password -s "$PASSWORD_SERVICE" -a "$USER" -w)
+secure "unlock-keychain -p $password \"$KEYCHAIN\""
 codesign --force --keychain "$KEYCHAIN" --sign "$IDENTITY" "$APP"
 security lock-keychain "$KEYCHAIN"
 
