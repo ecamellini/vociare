@@ -4,7 +4,7 @@
 
 Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted where you're typing. Voice and text never leave your Mac; the only download is the model.
 
-> **AI-assisted code.** Vociare is vibe-coded: written by an AI coding agent, directed, reviewed and tested by a human. Keep that in mind before relying on it.
+> **AI-assisted code.** Vociare is vibe-coded: written by an AI coding agent, directed, reviewed and tested by a human.
 
 ## How it works
 
