@@ -2,12 +2,48 @@ import AppKit
 import Carbon.HIToolbox
 import OSLog
 
-/// Reports long presses of right Command, and Esc during one. A short tap, a Command+key combo or a Command+click
-/// stays a normal one.
+/// The key held to dictate: a right-hand modifier, which types nothing when held alone.
+enum DictationKey: String, CaseIterable {
+    case rightCommand, rightOption, rightControl
+
+    var name: String {
+        switch self {
+        case .rightCommand: "right ⌘"
+        case .rightOption: "right ⌥"
+        case .rightControl: "right ⌃"
+        }
+    }
+
+    var menuTitle: String {
+        switch self {
+        case .rightCommand: "Right Command"
+        case .rightOption: "Right Option"
+        case .rightControl: "Right Control"
+        }
+    }
+
+    fileprivate var keyCode: Int {
+        switch self {
+        case .rightCommand: kVK_RightCommand
+        case .rightOption: kVK_RightOption
+        case .rightControl: kVK_RightControl
+        }
+    }
+
+    // Device-dependent flags, which tell the right key from the left one.
+    fileprivate var mask: UInt64 {
+        switch self {
+        case .rightCommand: 0x10  // NX_DEVICERCMDKEYMASK
+        case .rightOption: 0x40  // NX_DEVICERALTKEYMASK
+        case .rightControl: 0x2000  // NX_DEVICERCTLKEYMASK
+        }
+    }
+}
+
+/// Reports long presses of the dictation key, and Esc during one. A short tap, a modifier+key combo or a
+/// modifier+click stays a normal one.
 @MainActor
 final class HotkeyMonitor {
-    // Device-dependent flag for the right Command key (NX_DEVICERCMDKEYMASK).
-    private static let rightCommandMask: UInt64 = 0x10
     private let logger = Logger(subsystem: "me.ecamel.vociare", category: "Hotkey")
     private let holdThreshold: TimeInterval
     private let onStart: () -> Void
@@ -18,6 +54,19 @@ final class HotkeyMonitor {
     private var holdTimer: Timer?
     private var isPressed = false
     private var isActive = false
+
+    var key: DictationKey = .rightCommand {
+        didSet {
+            guard key != oldValue else { return }
+            // The old key's release would never arrive: drop its press, and any dictation it started.
+            holdTimer?.invalidate()
+            isPressed = false
+            if isActive {
+                isActive = false
+                onCancel()
+            }
+        }
+    }
 
     init(holdThreshold: TimeInterval, onStart: @escaping () -> Void, onStop: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.holdThreshold = holdThreshold
@@ -60,7 +109,7 @@ final class HotkeyMonitor {
         }
         CFRunLoopAddSource(CFRunLoopGetMain(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
         self.tap = tap
-        logger.notice("Listening for right Command")
+        logger.notice("Listening for the dictation key")
         return true
     }
 
@@ -74,8 +123,8 @@ final class HotkeyMonitor {
             onCancel()
         case .keyDown, .leftMouseDown, .rightMouseDown:
             holdTimer?.invalidate()
-        case .flagsChanged where event.getIntegerValueField(.keyboardEventKeycode) == kVK_RightCommand:
-            let pressed = event.flags.rawValue & Self.rightCommandMask != 0
+        case .flagsChanged where event.getIntegerValueField(.keyboardEventKeycode) == key.keyCode:
+            let pressed = event.flags.rawValue & key.mask != 0
             pressed ? press() : release()
         default:
             break

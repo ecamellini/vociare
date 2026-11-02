@@ -4,7 +4,7 @@
 
 Local push-to-talk dictation for macOS. Hold **right Command**, speak, release: the text is pasted where you're typing (**Esc** while holding cancels). It runs entirely on your Mac with NVIDIA's Parakeet model, in 25 European languages; your voice never leaves it. Text goes through the clipboard, which is restored afterwards; a copied password is cleared instead.
 
-From the menu bar icon you can paste a recent dictation again, reduce background noise, keep the output in the Latin alphabet (the model sometimes slips into Cyrillic or Greek), and set word replacements for names it gets wrong (`cloud code -> Claude Code`).
+From the menu bar icon you can switch the key to right Option or right Control, paste a recent dictation again, reduce background noise, keep the output in the Latin alphabet (the model sometimes slips into Cyrillic or Greek), and set word replacements for names it gets wrong (`cloud code -> Claude Code`).
 
 > **AI-assisted code.** Vociare is vibe-coded: written by an AI coding agent, directed, reviewed and tested by a human.
 
@@ -24,7 +24,7 @@ Upgrading from before late October 2026 downloads the model again. Unless anothe
 
 ## Troubleshooting
 
-- **Holding right Command does nothing, or beeps**: the menu's first line names what's missing, a permission or a microphone.
+- **Holding the key does nothing, or beeps**: the menu's first line names what's missing, a permission or a microphone.
 - **Menu bar icon hidden behind the notch**: open Vociare again from Spotlight; the menu appears under the pointer.
 - **First dictation after a macOS update is slow** (about half a minute): Core ML is preparing the model again.
 - **No text arrives**: the dictation is in **Recent**. If it isn't, watch the log (see Development) while dictating.
