@@ -173,7 +173,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if !voiceProcessing { startSound?.play() }
         } catch {
             logger.error("Microphone failed to start: \(error, privacy: .public)")
-            microphoneFailed = true
+            // A missing device has its own status line, which clears as soon as one is connected.
+            microphoneFailed = (error as? RecorderError) != .noInputDevice
             // Otherwise holding the key does nothing at all; the menu's first line says why.
             NSSound.beep()
             return
