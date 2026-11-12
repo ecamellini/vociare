@@ -12,27 +12,16 @@ final class OverlayModel: ObservableObject {
 @MainActor
 final class Overlay {
     private let model = OverlayModel()
-    private lazy var panel: NSPanel = {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 160, height: 44),
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: true
-        )
-        panel.level = .statusBar
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.ignoresMouseEvents = true
-        panel.hidesOnDeactivate = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        panel.contentView = NSHostingView(rootView: OverlayView(model: model))
-        return panel
-    }()
+    private var panel: NSPanel?
 
     func show() {
         model.levels = Array(repeating: 0, count: OverlayModel.barCount)
         model.isTranscribing = false
+        // A fresh panel each time: after Space or display changes the window server can pin a long-lived
+        // panel to a single Space despite .canJoinAllSpaces, and it then never shows on the others.
+        panel?.close()
+        let panel = makePanel()
+        self.panel = panel
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
         if let frame = screen?.visibleFrame {
             panel.setFrameOrigin(NSPoint(x: frame.midX - panel.frame.width / 2, y: frame.minY + 60))
@@ -49,7 +38,26 @@ final class Overlay {
     }
 
     func hide() {
-        panel.orderOut(nil)
+        panel?.orderOut(nil)
+    }
+
+    private func makePanel() -> NSPanel {
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 160, height: 44),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: true
+        )
+        panel.isReleasedWhenClosed = false
+        panel.level = .statusBar
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.ignoresMouseEvents = true
+        panel.hidesOnDeactivate = false
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+        panel.contentView = NSHostingView(rootView: OverlayView(model: model))
+        return panel
     }
 }
 
